@@ -787,7 +787,7 @@ struct addrinfo* freerdp_tcp_resolve_host(const char* hostname, int port, int ai
 static BOOL freerdp_tcp_is_hostname_resolvable(rdpContext* context, const char* hostname)
 {
 	struct addrinfo* result = freerdp_tcp_resolve_host(hostname, -1, 0);
-
+	WLog_INFO(TAG, "freerdp_tcp_is_hostname_resolvable: %s, result: %p", hostname, result);
 	if (!result)
 	{
 		freerdp_set_last_error_if_not(context, FREERDP_ERROR_DNS_NAME_NOT_FOUND);

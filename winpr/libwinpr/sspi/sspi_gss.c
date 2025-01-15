@@ -353,7 +353,7 @@ UINT32 SSPI_GSSAPI sspi_gss_wrap(UINT32* minor_status, sspi_gss_ctx_id_t context
 
 	status = g_GssApi->gss_wrap(minor_status, context_handle, conf_req_flag, qop_req,
 	                            input_message_buffer, conf_state, output_message_buffer);
-	WLog_DBG(TAG, "gss_acquire_cred: %s (0x%08" PRIX32 ")", GetSecurityStatusString(status),
+	WLog_DBG(TAG, "gss_wrap: %s (0x%08" PRIX32 ")", GetSecurityStatusString(status),
 	         status);
 	return status;
 }

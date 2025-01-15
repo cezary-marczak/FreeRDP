@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <ctype.h>
 
 #include <winpr/crt.h>
 #include <winpr/sspi.h>
@@ -230,6 +231,37 @@ static int kerberos_SetContextServicePrincipalNameA(KRB_CONTEXT* context,
 }
 
 #ifdef WITH_GSSAPI
+
+static krb5_error_code ctx_init(krb5_context ctx, krb5_principal client, krb5_ccache *out_ccache)
+{
+	krb5_ccache ccache;
+	krb5_error_code ret;
+
+	ret = krb5_cc_cache_match(ctx, client, &ccache);
+	if (ret)
+	{
+		WLog_ERR(TAG, "krb5_cc_cache_match, code: 0x%x", ret);
+
+		ret = krb5_cc_new_unique(ctx, "FILE", NULL, &ccache);
+		if (ret)
+		{
+			WLog_ERR(TAG, "error: krb5_cc_new_unique: 0x%x", ret);
+			return -1;
+		}
+
+		ret = krb5_cc_initialize(ctx, ccache, client);
+		if (ret)
+		{
+			WLog_ERR(TAG, "error: krb5_cc_initialize: 0x%x", ret);
+			krb5_cc_close(ctx, ccache);
+			return -1;
+		}
+	}
+	WLog_DBG(TAG, "credential cache initialized");
+	*out_ccache = ccache;
+	return 0;
+}
+
 static krb5_error_code KRB5_CALLCONV acquire_cred(krb5_context ctx, krb5_principal client,
                                                   const char* password)
 {
@@ -237,19 +269,14 @@ static krb5_error_code KRB5_CALLCONV acquire_cred(krb5_context ctx, krb5_princip
 	krb5_creds creds;
 	krb5_deltat starttime = 0;
 	krb5_get_init_creds_opt* options = NULL;
-	krb5_ccache ccache;
+	krb5_ccache ccache = NULL;
 	krb5_init_creds_context init_ctx = NULL;
 
-	/* Get default ccache */
-	if ((ret = krb5_cc_default(ctx, &ccache)))
+	/* Get matching ccache */
+	ret = ctx_init(ctx, client, &ccache);
+	if (ret)
 	{
-		WLog_ERR(TAG, "error while getting default ccache");
-		goto cleanup;
-	}
-
-	if ((ret = krb5_cc_initialize(ctx, ccache, client)))
-	{
-		WLog_ERR(TAG, "error: could not initialize ccache");
+		WLog_ERR(TAG, "error ctx_init, code: %d", ret);
 		goto cleanup;
 	}
 
@@ -277,29 +304,31 @@ static krb5_error_code KRB5_CALLCONV acquire_cred(krb5_context ctx, krb5_princip
 
 	if ((ret = krb5_init_creds_init(ctx, client, NULL, NULL, starttime, options, &init_ctx)))
 	{
-		WLog_ERR(TAG, "error krb5_init_creds_init failed");
+		WLog_ERR(TAG, "error krb5_init_creds_init failed, code: 0x%x", ret);
 		goto cleanup;
 	}
 
 	if ((ret = krb5_init_creds_set_password(ctx, init_ctx, password)))
 	{
-		WLog_ERR(TAG, "error krb5_init_creds_set_password failed");
+		WLog_ERR(TAG, "error krb5_init_creds_set_password failed, code: 0x%x", ret);
 		goto cleanup;
 	}
 
 	/* Get credentials */
 	if ((ret = krb5_init_creds_get(ctx, init_ctx)))
 	{
-		WLog_ERR(TAG, "error while getting credentials");
+		WLog_ERR(TAG, "error while getting credentials, code: 0x%x", ret);
 		goto cleanup;
 	}
 
 	/* Retrieve credentials */
 	if ((ret = krb5_init_creds_get_creds(ctx, init_ctx, &creds)))
 	{
-		WLog_ERR(TAG, "error while retrieving credentials");
+		WLog_ERR(TAG, "error while retrieving credentials, code: 0x%x", ret);
 		goto cleanup;
 	}
+	WLog_DBG(TAG, "krb5_init_creds_get_creds succeeded");
+
 
 #ifdef WITH_GSSAPI_HEIMDAL
 
@@ -372,35 +401,54 @@ static int init_creds(LPCWSTR username, size_t username_len, LPCWSTR password, s
 		goto cleanup;
 	}
 
-	ret = krb5_get_default_realm(ctx, &lrealm);
-
-	if (ret)
-	{
-		WLog_WARN(TAG, "could not get Kerberos default realm");
-		goto cleanup;
-	}
-
-	lrealm_len = strlen(lrealm);
-	lusername_len = strlen(lusername);
-	krb_name_len = lusername_len + lrealm_len + 1; // +1 for '@'
-	krb_name = calloc(krb_name_len + 1, sizeof(char));
-
-	if (!krb_name)
-	{
-		WLog_ERR(TAG, "could not allocate memory for string rep of principal\n");
-		ret = -1;
-		goto cleanup;
-	}
-
-	/* Set buffer */
-	_snprintf(krb_name, krb_name_len + 1, "%s@%s", lusername, lrealm);
-#ifdef WITH_DEBUG_NLA
-	WLog_DBG(TAG, "copied string is %s\n", krb_name);
-#endif
 	pstr = strchr(lusername, '@');
 
 	if (pstr != NULL)
-		flags = KRB5_PRINCIPAL_PARSE_ENTERPRISE;
+	{
+		krb_name = strdup(lusername);
+		if (!krb_name)
+		{
+			WLog_ERR(TAG, "could not allocate memory for string rep of principal\n");
+			goto cleanup;
+		}
+
+		pstr = strchr(krb_name, '@');
+		for(int i = 1; pstr[i]; i++)
+		{
+			pstr[i] = toupper(pstr[i]);
+		}
+
+		WLog_DBG(TAG, "krb_name from username: %s", krb_name);
+	}
+	else
+	{
+		ret = krb5_get_default_realm(ctx, &lrealm);
+		WLog_INFO(TAG, "default lrealm: %s", lrealm);
+
+		if (ret)
+		{
+			WLog_WARN(TAG, "could not get Kerberos default realm");
+			goto cleanup;
+		}
+
+		lrealm_len = strlen(lrealm);
+		lusername_len = strlen(lusername);
+		krb_name_len = lusername_len + lrealm_len + 1; // +1 for '@'
+		krb_name = calloc(krb_name_len + 1, sizeof(char));
+
+		if (!krb_name)
+		{
+			WLog_ERR(TAG, "could not allocate memory for string rep of principal\n");
+			ret = -1;
+			goto cleanup;
+		}
+
+		/* Set buffer */
+		_snprintf(krb_name, krb_name_len + 1, "%s@%s", lusername, lrealm);
+
+		WLog_DBG(TAG, "copied string is %s", krb_name);
+	}
+
 
 	/* Use the specified principal name. */
 	ret = krb5_parse_name_flags(ctx, krb_name, flags, &principal);
@@ -412,7 +460,6 @@ static int init_creds(LPCWSTR username, size_t username_len, LPCWSTR password, s
 	}
 
 	ret = acquire_cred(ctx, principal, lpassword);
-
 	if (ret)
 	{
 		WLog_ERR(TAG, "Kerberos credentials not found and could not be acquired");
@@ -422,9 +469,7 @@ static int init_creds(LPCWSTR username, size_t username_len, LPCWSTR password, s
 cleanup:
 	free(lusername);
 	free(lpassword);
-
-	if (krb_name)
-		free(krb_name);
+	free(krb_name);
 
 	if (lrealm)
 		krb5_free_default_realm(ctx, lrealm);
@@ -438,6 +483,81 @@ cleanup:
 	return ret;
 }
 #endif
+
+static SECURITY_STATUS principal_name_sspi2gss(UINT16* user, UINT32 user_length,
+                                               sspi_gss_name_t* out_principal_name)
+{
+	char* lusername = NULL;
+	char* pstr = NULL;
+	int status = 0;
+	status = ConvertFromUnicode(CP_UTF8, 0, user, user_length, &lusername, 0, NULL, NULL);
+
+	if (status <= 0)
+	{
+		WLog_ERR(TAG, "Failed to convert username, error code: %d", status);
+		return SEC_E_INTERNAL_ERROR;
+	}
+
+	pstr = strchr(lusername, '@');
+	if (pstr != NULL)
+	{
+		for(int i = 1; pstr[i]; i++)
+		{
+			pstr[i] = toupper(pstr[i]);
+		}
+
+		WLog_DBG(TAG, "krb_name from username: %s\n", lusername);
+	}
+	UINT32 major_status;
+	UINT32 minor_status;
+	sspi_gss_buffer_desc name_buffer;
+
+	name_buffer.value = lusername;
+	name_buffer.length = strlen(lusername) + 1;
+	major_status = sspi_gss_import_name(&minor_status, &name_buffer,
+	                                    SSPI_GSS_C_NT_USER_NAME, out_principal_name);
+	if (SSPI_GSS_ERROR(major_status))
+	{
+		WLog_ERR(TAG, "error: gss_import_name failed: 0x%x, 0x%x", major_status, minor_status);
+		return SEC_E_INTERNAL_ERROR;
+	}
+
+	free(lusername);
+
+	WLog_INFO(TAG, "imported name: %s", lusername);
+	return 0;
+}
+
+static SECURITY_STATUS get_init_cred_handle(KRB_CONTEXT* context, sspi_gss_name_t principal_name)
+{
+	if (init_creds(context->credentials->identity.User,
+	               context->credentials->identity.UserLength,
+	               context->credentials->identity.Password,
+	               context->credentials->identity.PasswordLength))
+	{
+		WLog_ERR(TAG, "Init GSS security context failed : can't use Kerberos, couldn't init credentials. "
+		              "Major status: 0x%x, Minor status: 0x%x",
+		         context->major_status, context->minor_status);
+		return SEC_E_NO_CREDENTIALS;
+	}
+
+	WLog_INFO(TAG, "Authenticated to Kerberos v5 via login/password, creds refreshed");
+	/* retry GSSAPI call */
+	context->major_status = sspi_gss_acquire_cred(&context->minor_status, principal_name, SSPI_GSS_C_INDEFINITE,
+	                                              SSPI_GSS_C_NO_OID_SET, SSPI_GSS_C_INITIATE, &context->cred, NULL,
+	                                              &(context->actual_time));
+	WLog_DBG(TAG, "sspi_gss_acquire_cred: 0x%x, 0x%x", context->major_status, context->minor_status);
+
+	if (SSPI_GSS_ERROR(context->major_status))
+	{
+		/* We can't use Kerberos */
+		WLog_ERR(TAG, "Init GSS security context failed : can't use Kerberos, couldn't acquire credentials. "
+		              "Major status: 0x%x, Minor status: 0x%x",
+		         context->major_status, context->minor_status);
+		return SEC_E_NO_CREDENTIALS;
+	}
+	return 0;
+}
 
 static SECURITY_STATUS SEC_ENTRY kerberos_InitializeSecurityContextA(
     PCredHandle phCredential, PCtxtHandle phContext, SEC_CHAR* pszTargetName, ULONG fContextReq,
@@ -457,6 +577,8 @@ static SECURITY_STATUS SEC_ENTRY kerberos_InitializeSecurityContextA(
 	output_tok.length = 0;
 	desired_mech = SSPI_GSS_C_SPNEGO_KRB5;
 	context = (KRB_CONTEXT*)sspi_SecureHandleGetLowerPointer(phContext);
+	sspi_gss_name_t principal_name = NULL;
+	SECURITY_STATUS sspi_ret = 0;
 
 	if (!context)
 	{
@@ -481,29 +603,59 @@ static SECURITY_STATUS SEC_ENTRY kerberos_InitializeSecurityContextA(
 	if (!pInput)
 	{
 #if defined(WITH_GSSAPI)
-		context->major_status = sspi_gss_init_sec_context(
-		    &(context->minor_status), context->cred, &(context->gss_ctx), context->target_name,
-		    desired_mech, SSPI_GSS_C_MUTUAL_FLAG | SSPI_GSS_C_DELEG_FLAG, SSPI_GSS_C_INDEFINITE,
-		    SSPI_GSS_C_NO_CHANNEL_BINDINGS, &input_tok, &actual_mech, &output_tok, &actual_services,
-		    &(context->actual_time));
+		sspi_ret = principal_name_sspi2gss(context->credentials->identity.User,
+		                                                context->credentials->identity.UserLength,
+		                                                &principal_name);
+		if (sspi_ret)
+		{
+			WLog_ERR(TAG, "error: principal_name_sspi2gss failed: 0x%x", sspi_ret);
+			return SEC_E_INTERNAL_ERROR;
+		}
+
+		context->minor_status = 0;
+		context->major_status = sspi_gss_acquire_cred(&context->minor_status, principal_name, SSPI_GSS_C_INDEFINITE,
+													  SSPI_GSS_C_NO_OID_SET, SSPI_GSS_C_INITIATE, &context->cred, NULL,
+													  &(context->actual_time));
+		WLog_DBG(TAG, "sspi_gss_acquire_cred: 0x%x, 0x%x", context->major_status, context->minor_status);
 
 		if (SSPI_GSS_ERROR(context->major_status))
 		{
-			/* GSSAPI failed because we do not have credentials */
-			if (context->major_status & SSPI_GSS_S_NO_CRED)
-			{
-				/* Then let's try to acquire credentials using login and password,
-				 * and only those two, means not with a smartcard.
-				 * If we use smartcard-logon, the credentials have already
-				 * been acquired by pkinit process. If not, returned error previously.
-				 */
-				if (init_creds(context->credentials->identity.User,
-				               context->credentials->identity.UserLength,
-				               context->credentials->identity.Password,
-				               context->credentials->identity.PasswordLength))
-					return SEC_E_NO_CREDENTIALS;
+			WLog_ERR(TAG, "sspi_gss_acquire_cred failed: 0x%x, 0x%x", context->major_status,
+			         context->minor_status);
 
-				WLog_INFO(TAG, "Authenticated to Kerberos v5 via login/password");
+			/* Then let's try to acquire credentials using login and password,
+			 * and only those two, means not with a smartcard.
+			 * If we use smartcard-logon, the credentials have already
+			 * been acquired by pkinit process. If not, returned error previously.
+			 */
+			sspi_ret = get_init_cred_handle(context, principal_name);
+			if (sspi_ret)
+			{
+				WLog_ERR(TAG, "error: get_init_cred_handle failed: 0x%x", sspi_ret);
+				goto fail;
+			}
+		}
+
+		/* init context */
+		context->major_status = sspi_gss_init_sec_context(
+		    &(context->minor_status), context->cred, &(context->gss_ctx),
+		    context->target_name, desired_mech,
+		    SSPI_GSS_C_MUTUAL_FLAG | SSPI_GSS_C_DELEG_FLAG, SSPI_GSS_C_INDEFINITE,
+		    SSPI_GSS_C_NO_CHANNEL_BINDINGS, &input_tok, &actual_mech, &output_tok,
+		    &actual_services, &(context->actual_time));
+
+		if (SSPI_GSS_ERROR(context->major_status))
+		{
+			if (context->minor_status == (UINT32)KRB5KRB_AP_ERR_TKT_EXPIRED)
+			{
+				WLog_WARN(TAG, "error: Kerberos ticket expired, renewing credentials...");
+				sspi_ret = get_init_cred_handle(context, principal_name);
+				if (sspi_ret)
+				{
+					WLog_ERR(TAG, "error: get_init_cred_handle failed: 0x%x", sspi_ret);
+					goto fail;
+				}
+
 				/* retry GSSAPI call */
 				context->major_status = sspi_gss_init_sec_context(
 				    &(context->minor_status), context->cred, &(context->gss_ctx),
@@ -515,9 +667,23 @@ static SECURITY_STATUS SEC_ENTRY kerberos_InitializeSecurityContextA(
 				if (SSPI_GSS_ERROR(context->major_status))
 				{
 					/* We can't use Kerberos */
-					WLog_ERR(TAG, "Init GSS security context failed : can't use Kerberos");
-					return SEC_E_INTERNAL_ERROR;
+					WLog_ERR(TAG, "Init GSS security context failed : can't use Kerberos, couldn't acquire credentials. "
+					              "Major status: 0x%x, Minor status: 0x%x",
+					         context->major_status, context->minor_status);
+					sspi_gss_release_name(&(context->minor_status), &principal_name);
+					sspi_ret = SEC_E_NO_CREDENTIALS;
+					goto fail;
 				}
+			}
+			else
+			{
+				/* We can't use Kerberos */
+				WLog_ERR(TAG,
+				         "Init GSS security context failed : can't use Kerberos. "
+				         "Major status: 0x%x, Minor status: 0x%x",
+				         context->major_status, context->minor_status);
+				sspi_ret = SEC_E_INTERNAL_ERROR;
+				goto fail;
 			}
 		}
 
@@ -583,6 +749,10 @@ static SECURITY_STATUS SEC_ENTRY kerberos_InitializeSecurityContextA(
 	}
 
 	return SEC_E_INTERNAL_ERROR;
+
+fail:
+	sspi_gss_release_name(&(context->minor_status), &principal_name);
+	return sspi_ret;
 }
 
 static SECURITY_STATUS SEC_ENTRY kerberos_DeleteSecurityContext(PCtxtHandle phContext)
