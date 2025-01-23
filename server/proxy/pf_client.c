@@ -23,9 +23,13 @@
 #include "config.h"
 #endif
 
+#include <ctype.h>
+#include <cJSON.h>
+
 #include <freerdp/freerdp.h>
 #include <freerdp/gdi/gdi.h>
 #include <freerdp/client/cmdline.h>
+#include <freerdp/crypto/crypto.h>
 
 #include "pf_channels.h"
 #include "pf_gdi.h"
@@ -375,7 +379,7 @@ static BOOL pf_client_post_connect(freerdp* instance)
 }
 
 /* This function is called whether a session ends by failure or success.
- * Clean up everything allocated by pre_connect and post_connect.
+ * Clean up everything allocated by pre_connect and pre_connect.
  */
 static void pf_client_post_disconnect(freerdp* instance)
 {
@@ -451,12 +455,196 @@ static BOOL pf_client_connect_without_nla(pClientContext* pc)
 	return freerdp_connect(instance);
 }
 
+// Function to read credentials from a file
+static BOOL read_credentials_from_file(const char* input_username, const char* target_server, char* password, size_t password_len)
+{
+	const char* filePath = "/var/lib/procyon/ssl/rdpservers.json";
+	FILE* file = fopen(filePath, "r");
+	if (!file)
+	{
+		(void)fprintf(stderr, "Failed to open credentials file: %s\n", filePath);
+		return FALSE;
+	}
+
+	fseek(file, 0, SEEK_END);
+	long fileSize = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	char* fileContent = (char*)malloc(fileSize + 1);
+	if (!fileContent)
+	{
+		fclose(file);
+		(void)fprintf(stderr, "Failed to allocate memory for file content\n");
+		return FALSE;
+	}
+
+	fread(fileContent, 1, fileSize, file);
+	fileContent[fileSize] = '\0';
+	fclose(file);
+
+	cJSON* parsed_json = cJSON_Parse(fileContent);
+	free(fileContent);
+
+	if (!parsed_json)
+	{
+		(void)fprintf(stderr, "Failed to parse credentials from file\n");
+		return FALSE;
+	}
+
+	const char* json_str = cJSON_Print(parsed_json);
+	if (!json_str)
+	{
+		(void)fprintf(stderr, "Failed to parse credentials from file\n");
+		return FALSE;
+	}
+	WLog_INFO(TAG, "Parsed JSON: %s", json_str);
+
+	cJSON* rdp_servers = cJSON_GetObjectItem(parsed_json, "rdp_servers");
+	if (!rdp_servers)
+	{
+		(void)fprintf(stderr, "Failed to get rdp_servers from JSON\n");
+		cJSON_Delete(parsed_json);
+		return FALSE;
+	}
+
+	cJSON* server_json = cJSON_GetObjectItem(rdp_servers, target_server);
+	if (!server_json)
+	{
+		(void)fprintf(stderr, "Failed to get server information for %s\n", target_server);
+		cJSON_Delete(parsed_json);
+		return FALSE;
+	}
+
+	cJSON * json_credentials = cJSON_GetObjectItem(server_json, "credentials");
+	if (!json_credentials)
+	{
+		(void)fprintf(stderr, "Failed to get credentials from JSON\n");
+		cJSON_Delete(parsed_json);
+		return FALSE;
+	}
+
+	// Iterate over the credentials array to find the matching username
+	int credentials_count = cJSON_GetArraySize(json_credentials);
+	BOOL found = FALSE;
+	for (int i = 0; i < credentials_count; i++)
+	{
+		cJSON* credential = cJSON_GetArrayItem(json_credentials, i);
+		cJSON* json_username = cJSON_GetObjectItem(credential, "username");
+		cJSON* json_password = cJSON_GetObjectItem(credential, "password");
+
+		if (!json_username || !json_password)
+		{
+			continue;
+		}
+
+		const char* username_str = cJSON_GetStringValue(json_username);
+		const char* password_str = cJSON_GetStringValue(json_password);
+
+		if (!username_str || !password_str)
+		{
+			continue;
+		}
+
+		// Create temporary buffers for lowercase comparison
+		char temp_input[256];
+		char temp_stored[256];
+		strncpy(temp_input, input_username, sizeof(temp_input) - 1);
+		strncpy(temp_stored, username_str, sizeof(temp_stored) - 1);
+		temp_input[sizeof(temp_input) - 1] = '\0';
+		temp_stored[sizeof(temp_stored) - 1] = '\0';
+
+		for(size_t j = 0; temp_input[j]; j++)
+			temp_input[j] = tolower((unsigned char)temp_input[j]);
+		for(size_t j = 0; temp_stored[j]; j++)
+			temp_stored[j] = tolower((unsigned char)temp_stored[j]);
+
+		if (strcmp(temp_input, temp_stored) == 0)
+		{
+			// Copy the password
+			strncpy(password, password_str, password_len - 1);
+			password[password_len - 1] = '\0';
+			found = TRUE;
+			break;
+		}
+	}
+
+	cJSON_Delete(parsed_json);
+
+	if (!found)
+	{
+		(void)fprintf(stderr, "Username not found in credentials\n");
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 static BOOL pf_client_connect(freerdp* instance)
 {
 	pClientContext* pc = (pClientContext*)instance->context;
 	rdpSettings* settings = instance->settings;
 	BOOL rc = FALSE;
 	BOOL retry = FALSE;
+	char password[256] = { 0 };
+
+	LOG_INFO(TAG, pc, "server_hostname=%s, client_hostname=%s",
+	               freerdp_settings_get_string(settings, FreeRDP_ServerHostname),
+	               freerdp_settings_get_string(settings, FreeRDP_ClientHostname));
+
+	// Get base64 encoded hostname
+	const char* encoded_hostname = freerdp_settings_get_string(settings, FreeRDP_ServerHostname);
+	if (!encoded_hostname)
+	{
+		LOG_ERR(TAG, pc, "Server hostname not set");
+		return FALSE;
+	}
+
+	// Decode hostname
+	size_t decoded_len = 0;
+	BYTE* decoded_hostname = NULL;
+	crypto_base64_decode(encoded_hostname, strlen(encoded_hostname), &decoded_hostname, &decoded_len);
+	if (!decoded_hostname)
+	{
+		LOG_ERR(TAG, pc, "Failed to decode server hostname");
+		return FALSE;
+	}
+
+	char* server_hostname = (char*)calloc(decoded_len + 1, sizeof(char));
+	if (!server_hostname)
+	{
+		free(decoded_hostname);
+		LOG_ERR(TAG, pc, "Failed to allocate memory for hostname");
+		return FALSE;
+	}
+	memcpy(server_hostname, decoded_hostname, decoded_len);
+	server_hostname[decoded_len] = '\0';
+
+	const char* username = freerdp_settings_get_string(settings, FreeRDP_Username);
+
+	if (!username)
+	{
+		LOG_ERR(TAG, pc, "Username is not set in settings");
+		return FALSE;
+	}
+
+	LOG_INFO(TAG, pc, "connecting to target server %s with username: %s", server_hostname, username);
+
+	// Read credentials from file
+	if (!read_credentials_from_file(username, server_hostname, password, sizeof(password)))
+	{
+		free(decoded_hostname);
+		free(server_hostname);
+		LOG_ERR(TAG, pc, "Failed to read credentials from file");
+		return FALSE;
+	}
+
+	// Set the credentials in the settings
+	if (!freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
+	    !freerdp_settings_set_string(settings, FreeRDP_ServerHostname, server_hostname))
+	{
+		LOG_ERR(TAG, pc, "Failed to set credentials in settings");
+		return FALSE;
+	}
 
 	LOG_INFO(TAG, pc, "connecting using client info: Username: %s, Domain: %s", settings->Username,
 	         settings->Domain);

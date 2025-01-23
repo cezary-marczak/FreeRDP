@@ -97,6 +97,13 @@ struct p_client_context
 
 	BOOL input_state_sync_pending;
 	UINT32 input_state;
+
+	void* client;
+	UINT32 palette[256];
+	rdpUpdate* additional_update;
+	rdpBitmap* bitmap;
+	rdpGlyph* glyph;
+	rdpPointer* pointer;
 };
 typedef struct p_client_context pClientContext;
 

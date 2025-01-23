@@ -57,7 +57,10 @@ static BOOL pf_client_begin_paint(rdpContext* context)
 	proxyData* pdata = pc->pdata;
 	rdpContext* ps = (rdpContext*)pdata->ps;
 	WLog_DBG(TAG, __FUNCTION__);
-	return ps->update->BeginPaint(ps);
+	BOOL ret = ps->update->BeginPaint(ps);
+	if (pc->additional_update->BeginPaint)
+		pc->additional_update->BeginPaint((rdpContext*)pc);
+	return ret;
 }
 
 /**
@@ -75,8 +78,13 @@ static BOOL pf_client_end_paint(rdpContext* context)
 	WLog_DBG(TAG, __FUNCTION__);
 
 	/* proxy end paint */
-	if (!ps->update->EndPaint(ps))
-		return FALSE;
+	BOOL ret = ps->update->EndPaint(ps);
+
+	if (pc->additional_update->EndPaint)
+		pc->additional_update->EndPaint((rdpContext*)pc);
+
+	if (!ret)
+		return ret;
 
 	if (!pdata->config->SessionCapture)
 		return TRUE;
@@ -101,7 +109,10 @@ static BOOL pf_client_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bi
 	proxyData* pdata = pc->pdata;
 	rdpContext* ps = (rdpContext*)pdata->ps;
 	WLog_DBG(TAG, __FUNCTION__);
-	return ps->update->BitmapUpdate(ps, bitmap);
+	BOOL ret = ps->update->BitmapUpdate(ps, bitmap);
+	if (pc->additional_update->BitmapUpdate)
+		pc->additional_update->BitmapUpdate((rdpContext*)pc, bitmap);
+	return ret;
 }
 
 static BOOL pf_client_desktop_resize(rdpContext* context)
@@ -112,7 +123,10 @@ static BOOL pf_client_desktop_resize(rdpContext* context)
 	WLog_DBG(TAG, __FUNCTION__);
 	ps->settings->DesktopWidth = context->settings->DesktopWidth;
 	ps->settings->DesktopHeight = context->settings->DesktopHeight;
-	return ps->update->DesktopResize(ps);
+	BOOL ret = ps->update->DesktopResize(ps);
+	if (pc->additional_update->DesktopResize)
+		pc->additional_update->DesktopResize((rdpContext*)pc);
+	return ret;
 }
 
 static BOOL pf_client_remote_monitors(rdpContext* context, UINT32 count,

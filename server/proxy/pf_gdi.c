@@ -32,6 +32,7 @@
 #include <freerdp/freerdp.h>
 #include "pf_gdi.h"
 #include "pf_log.h"
+#include "pf_context.h"
 
 #include <freerdp/log.h>
 #define TAG PROXY_TAG("gdi")
@@ -40,30 +41,55 @@
 static BOOL pf_gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 {
 	WLog_INFO(TAG, __FUNCTION__);
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	if (pc->additional_update->SetBounds)
+		return pc->additional_update->SetBounds(ps, bounds);
 	return TRUE;
 }
 
 static BOOL pf_gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 {
 	WLog_INFO(TAG, __FUNCTION__);
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	if (pc->additional_update->primary->DstBlt)
+		return pc->additional_update->primary->DstBlt(ps, dstblt);
 	return TRUE;
 }
 
 static BOOL pf_gdi_patblt(rdpContext* context, PATBLT_ORDER* patblt)
 {
 	WLog_INFO(TAG, __FUNCTION__);
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	if (pc->additional_update->primary->PatBlt)
+		return pc->additional_update->primary->PatBlt(ps, patblt);
 	return TRUE;
 }
 
 static BOOL pf_gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 {
 	WLog_INFO(TAG, __FUNCTION__);
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	if (pc->additional_update->primary->ScrBlt)
+		return pc->additional_update->primary->ScrBlt(ps, scrblt);
 	return TRUE;
 }
 
 static BOOL pf_gdi_opaque_rect(rdpContext* context, const OPAQUE_RECT_ORDER* opaque_rect)
 {
 	WLog_INFO(TAG, __FUNCTION__);
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	if (pc->additional_update->primary->OpaqueRect)
+		return pc->additional_update->primary->OpaqueRect(ps, opaque_rect);
 	return TRUE;
 }
 
@@ -89,6 +115,11 @@ static BOOL pf_gdi_polyline(rdpContext* context, const POLYLINE_ORDER* polyline)
 static BOOL pf_gdi_memblt(rdpContext* context, MEMBLT_ORDER* memblt)
 {
 	WLog_INFO(TAG, __FUNCTION__);
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	if (pc->additional_update->primary->MemBlt)
+		return pc->additional_update->primary->MemBlt(ps, memblt);
 	return TRUE;
 }
 
