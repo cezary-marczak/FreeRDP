@@ -26,7 +26,7 @@
 
 #include "pf_update.h"
 #include "pf_capture.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 #include "pf_log.h"
 
 #define TAG PROXY_TAG("update")

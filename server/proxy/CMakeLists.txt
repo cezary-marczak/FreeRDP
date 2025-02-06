@@ -27,7 +27,6 @@ pkg_search_module(CJSON REQUIRED libcjson)
 
 set(${MODULE_PREFIX}_SRCS
   pf_context.c
-  pf_context.h
   pf_channels.c
   pf_channels.h
   pf_client.c
@@ -47,7 +46,6 @@ set(${MODULE_PREFIX}_SRCS
   pf_gdi.c
   pf_gdi.h
   pf_config.c
-  pf_config.h
   pf_graphics.c
   pf_graphics.h
   pf_modules.c

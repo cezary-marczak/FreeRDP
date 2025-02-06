@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-#include "pf_config.h"
+#include <freerdp/server/pf_config.h>
 #include "pf_server.h"
 #include "pf_log.h"
 #include "pf_modules.h"

@@ -33,7 +33,7 @@
 
 #include "pf_channels.h"
 #include "pf_client.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 #include "pf_rail.h"
 #include "pf_rdpgfx.h"
 #include "pf_cliprdr.h"

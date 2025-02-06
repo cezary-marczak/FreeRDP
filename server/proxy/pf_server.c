@@ -33,9 +33,9 @@
 #include <freerdp/server/proxy.h>
 
 #include "pf_log.h"
-#include "pf_config.h"
+#include <freerdp/server/pf_config.h>
+#include <freerdp/server/pf_context.h>
 #include "pf_client.h"
-#include "pf_context.h"
 #include "pf_update.h"
 #include "pf_rdpgfx.h"
 #include "pf_disp.h"

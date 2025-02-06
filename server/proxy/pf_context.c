@@ -23,7 +23,7 @@
 #include <winpr/print.h>
 
 #include "pf_client.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 static wHashTable* create_channel_ids_map()
 {

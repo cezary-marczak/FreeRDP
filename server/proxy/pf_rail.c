@@ -23,7 +23,7 @@
 #include <freerdp/server/rail.h>
 
 #include "pf_rail.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 #include "pf_log.h"
 
 #define TAG PROXY_TAG("rail")

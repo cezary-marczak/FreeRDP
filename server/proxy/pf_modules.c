@@ -28,7 +28,7 @@
 
 #include "pf_log.h"
 #include "pf_modules.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 #define TAG PROXY_TAG("modules")
 

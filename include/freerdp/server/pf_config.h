@@ -91,12 +91,12 @@ extern "C"
 	FREERDP_API BOOL pf_config_get_bool(wIniFile* ini, const char* section, const char* key);
 	FREERDP_API const char* pf_config_get_str(wIniFile* ini, const char* section, const char* key);
 
+	FREERDP_API proxyConfig* pf_server_config_load(const char* path);
+	FREERDP_API void pf_server_config_print(proxyConfig* config);
+	FREERDP_API void pf_server_config_free(proxyConfig* config);
+
 #ifdef __cplusplus
 };
 #endif
-
-proxyConfig* pf_server_config_load(const char* path);
-void pf_server_config_print(proxyConfig* config);
-void pf_server_config_free(proxyConfig* config);
 
 #endif /* FREERDP_SERVER_PROXY_PFCONFIG_H */

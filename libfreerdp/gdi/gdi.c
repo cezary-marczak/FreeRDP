@@ -45,6 +45,7 @@
 #include "line.h"
 #include "gdi.h"
 #include "../core/graphics.h"
+#include <freerdp/server/pf_context.h>
 
 #define TAG FREERDP_TAG("gdi")
 
@@ -549,6 +550,11 @@ static BOOL gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 	else
 		gdi_SetNullClipRgn(gdi->drawing->hdc);
 
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update->SetBounds)
+		if (pc->additional_update->SetBounds(context, bounds) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->SetBounds failed");
+
 	return TRUE;
 }
 
@@ -560,8 +566,15 @@ static BOOL gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 		return FALSE;
 
 	gdi = context->gdi;
-	return gdi_BitBlt(gdi->drawing->hdc, dstblt->nLeftRect, dstblt->nTopRect, dstblt->nWidth,
-	                  dstblt->nHeight, NULL, 0, 0, gdi_rop3_code(dstblt->bRop), &gdi->palette);
+	BOOL ret = gdi_BitBlt(gdi->drawing->hdc, dstblt->nLeftRect, dstblt->nTopRect, dstblt->nWidth,
+	                      dstblt->nHeight, NULL, 0, 0, gdi_rop3_code(dstblt->bRop), &gdi->palette);
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update->primary->DstBlt)
+		if (pc->additional_update->primary->DstBlt(context, dstblt) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->DstBlt failed");
+
+	return ret;
 }
 
 static BOOL gdi_patblt(rdpContext* context, PATBLT_ORDER* patblt)
@@ -660,6 +673,11 @@ static BOOL gdi_patblt(rdpContext* context, PATBLT_ORDER* patblt)
 		                 patblt->nHeight, gdi->primary->hdc, nXSrc, nYSrc, rop, &gdi->palette);
 	}
 
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update->primary->PatBlt)
+		if (pc->additional_update->primary->PatBlt(context, patblt) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->PatBlt failed");
+
 out_error:
 	gdi_DeleteObject((HGDIOBJECT)hBmp);
 	gdi_DeleteObject((HGDIOBJECT)hbrush);
@@ -676,9 +694,16 @@ static BOOL gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 		return FALSE;
 
 	gdi = context->gdi;
-	return gdi_BitBlt(gdi->drawing->hdc, scrblt->nLeftRect, scrblt->nTopRect, scrblt->nWidth,
+	BOOL ret = gdi_BitBlt(gdi->drawing->hdc, scrblt->nLeftRect, scrblt->nTopRect, scrblt->nWidth,
 	                  scrblt->nHeight, gdi->primary->hdc, scrblt->nXSrc, scrblt->nYSrc,
 	                  gdi_rop3_code(scrblt->bRop), &gdi->palette);
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update->primary->ScrBlt)
+		if (pc->additional_update->primary->ScrBlt(context, scrblt) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->ScrBlt failed");
+
+	return ret;
 }
 
 static BOOL gdi_opaque_rect(rdpContext* context, const OPAQUE_RECT_ORDER* opaque_rect)
@@ -703,6 +728,12 @@ static BOOL gdi_opaque_rect(rdpContext* context, const OPAQUE_RECT_ORDER* opaque
 
 	ret = gdi_FillRect(gdi->drawing->hdc, &rect, hBrush);
 	gdi_DeleteObject((HGDIOBJECT)hBrush);
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update->primary->OpaqueRect)
+		if (pc->additional_update->primary->OpaqueRect(context, opaque_rect) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->OpaqueRect failed");
+
 	return ret;
 }
 
@@ -820,9 +851,16 @@ static BOOL gdi_memblt(rdpContext* context, MEMBLT_ORDER* memblt)
 
 	bitmap = (gdiBitmap*)memblt->bitmap;
 	gdi = context->gdi;
-	return gdi_BitBlt(gdi->drawing->hdc, memblt->nLeftRect, memblt->nTopRect, memblt->nWidth,
+	BOOL ret = gdi_BitBlt(gdi->drawing->hdc, memblt->nLeftRect, memblt->nTopRect, memblt->nWidth,
 	                  memblt->nHeight, bitmap->hdc, memblt->nXSrc, memblt->nYSrc,
 	                  gdi_rop3_code(memblt->bRop), &gdi->palette);
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update->primary->MemBlt)
+		if (pc->additional_update->primary->MemBlt(context, memblt) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->MemBlt failed");
+
+	return ret;
 }
 
 static BOOL gdi_mem3blt(rdpContext* context, MEM3BLT_ORDER* mem3blt)

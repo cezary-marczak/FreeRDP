@@ -34,8 +34,8 @@
 #include <freerdp/server/cliprdr.h>
 #include <freerdp/server/rdpsnd.h>
 
-#include "pf_config.h"
-#include "pf_server.h"
+//#include <freerdp/server/pf_config.h>
+#include <freerdp/server/proxy.h>
 
 typedef struct proxy_data proxyData;
 

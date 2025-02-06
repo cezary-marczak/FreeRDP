@@ -35,7 +35,7 @@
 #include "pf_gdi.h"
 #include "pf_graphics.h"
 #include "pf_client.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 #include "pf_update.h"
 #include "pf_log.h"
 #include "pf_modules.h"
@@ -329,7 +329,7 @@ static BOOL pf_client_post_connect(freerdp* instance)
 		LOG_ERR(TAG, pc, "frames dir created: %s", pc->frames_dir);
 	}
 
-	if (!gdi_init(instance, PIXEL_FORMAT_BGRA32))
+	if (!gdi_init(instance, PIXEL_FORMAT_BGRX32))
 		return FALSE;
 
 	if (!pf_register_pointer(context->graphics))

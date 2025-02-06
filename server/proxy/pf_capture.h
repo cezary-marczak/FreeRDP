@@ -20,7 +20,7 @@
 #ifndef FREERDP_SERVER_PROXY_CAPTURE_H
 #define FREERDP_SERVER_PROXY_CAPTURE_H
 
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 BOOL pf_capture_create_session_directory(pClientContext* context);
 BOOL pf_capture_save_frame(pClientContext* pc, const BYTE* frame);
