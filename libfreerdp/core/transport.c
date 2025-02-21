@@ -225,11 +225,65 @@ wStream* transport_send_stream_init(rdpTransport* transport, int size)
 	return s;
 }
 
-BOOL transport_attach(rdpTransport* transport, int sockfd)
+static void print_bio_chain(BIO *bio, const char *prefix) {
+	BIO *current = bio;
+	while (current) {
+		long type = BIO_method_type(current);
+		const char *name = BIO_method_name(current);
+//		printf("%s  -  BIO type: %ld (%s)\n", prefix, type, name);
+		current = BIO_next(current);
+	}
+}
+
+static long bio_debug_callback(BIO *b, int oper, const char *argp, int argi,
+                               long argl, long ret)
+{
+	if (BIO_cb_pre(oper))
+		return ret;
+
+	const char* op = "unknown";
+	if (BIO_CB_return(BIO_CB_READ) == oper) {
+		op = "read";
+	} else if (BIO_CB_return(BIO_CB_WRITE) == oper) {
+		op = "write";
+	} else if (BIO_CB_return(BIO_CB_PUTS) == oper) {
+		op = "puts";
+	} else if (BIO_CB_return(BIO_CB_GETS) == oper) {
+		op = "gets";
+	} else if (BIO_CB_return(BIO_CB_CTRL) == oper) {
+		if (argi == BIO_C_GET_FD) {
+			return ret;
+		}
+		op = "ctrl";
+	}
+
+//	WLog_VRB(TAG, "--- START ---");
+//	print_bio_chain(b, "bio_debug_callback");
+
+	const char* dbarg = BIO_get_callback_arg(b);
+	if (!dbarg)
+		dbarg = "not set";
+//	long long processed_len = -1;
+//	if (processed)
+//		processed_len = *processed;
+
+//	int fd = BIO_get_fd(b, NULL);
+
+//	WLog_VRB(TAG, "BIO fd: %d, op: %s, arg: '%s', argi: %d, argl: %ld, ret: %ld",
+//	         fd, op, dbarg, argi, argl, ret);
+
+//	WLog_VRB(TAG, "--- END ---");
+
+	return ret;
+}
+
+BOOL transport_attach(rdpTransport* transport, int sockfd, char* debugarg)
 {
 	BIO* socketBio = NULL;
 	BIO* bufferedBio;
 	socketBio = BIO_new(BIO_s_simple_socket());
+	// BIO_set_callback(socketBio, bio_debug_callback);
+	// BIO_set_callback_arg(socketBio, debugarg);
 
 	if (!socketBio)
 		goto fail;
@@ -354,6 +408,8 @@ BOOL transport_connect_nla(rdpTransport* transport)
 	return TRUE;
 }
 
+char SERVER_DEB[] = "SERVER";
+
 BOOL transport_connect(rdpTransport* transport, const char* hostname, UINT16 port, DWORD timeout)
 {
 	int sockfd;
@@ -426,7 +482,7 @@ BOOL transport_connect(rdpTransport* transport, const char* hostname, UINT16 por
 		if (sockfd < 0)
 			return FALSE;
 
-		if (!transport_attach(transport, sockfd))
+		if (!transport_attach(transport, sockfd, SERVER_DEB))
 			return FALSE;
 
 		if (isProxyConnection)
@@ -523,6 +579,8 @@ static void transport_bio_error_log(rdpTransport* transport, LPCSTR biofunc, BIO
 	if (level < WLog_GetLogLevel(transport->log))
 		return;
 
+//	print_bio_chain(bio, "error");
+
 	if (ERR_peek_error() == 0)
 	{
 		const char* fmt = "%s returned a system error %d: %s";
@@ -568,6 +626,8 @@ static SSIZE_T transport_read_layer(rdpTransport* transport, BYTE* data, size_t 
 
 		if (status <= 0)
 		{
+//			WLog_VRB(TAG, "Bio read error: %d", status);
+
 			if (!transport->frontBio || !BIO_should_retry(transport->frontBio))
 			{
 				/* something unexpected happened, let's close */
@@ -911,6 +971,7 @@ DWORD transport_get_event_handles(rdpTransport* transport, HANDLE* events, DWORD
 		}
 
 		events[0] = transport->rereadEvent;
+//		WLog_Print(transport->log, WLOG_TRACE, "0 EVENT HANDLER: rereadEvent");
 	}
 
 	if (!transport->GatewayEnabled)
@@ -934,6 +995,7 @@ DWORD transport_get_event_handles(rdpTransport* transport, HANDLE* events, DWORD
 				           __FUNCTION__);
 				return 0;
 			}
+//			WLog_Print(transport->log, WLOG_TRACE, "1 EVENT HANDLER: FrontBIO");
 		}
 	}
 	else
@@ -1090,6 +1152,8 @@ int transport_check_fds(rdpTransport* transport)
 BOOL transport_set_blocking_mode(rdpTransport* transport, BOOL blocking)
 {
 	transport->blocking = blocking;
+
+	WLog_VRB(TAG, "Set blocking mode: %p -> %s", transport, blocking ? "TRUE" : "FALSE");
 
 	if (!BIO_set_nonblock(transport->frontBio, blocking ? FALSE : TRUE))
 		return FALSE;

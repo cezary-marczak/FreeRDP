@@ -53,6 +53,7 @@ static void pf_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 
 static BOOL pf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 {
+	WLog_INFO(TAG, "pf_Bitmap_Paint - not gdi");
 	return TRUE;
 }
 

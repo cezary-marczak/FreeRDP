@@ -106,6 +106,36 @@ static long transport_bio_simple_callback(BIO* bio, int mode, const char* argp, 
 	return 1;
 }
 
+static void string_hexdump(const BYTE* data, size_t length)
+{
+	const BYTE* p = data;
+	size_t i, line, offset = 0;
+
+	while (offset < length)
+	{
+		printf("%04" PRIxz " ", offset);
+
+		line = length - offset;
+
+		if (line > 16)
+			line = 16;
+
+		for (i = 0; i < line; i++)
+			printf("%02" PRIx8 " ", p[i]);
+
+		for (; i < 16; i++)
+			printf("   ");
+
+		for (i = 0; i < line; i++)
+			printf("%c", (p[i] >= 0x20 && p[i] < 0x7F) ? (char)p[i] : '.');
+
+		printf("\n");
+
+		offset += line;
+		p += line;
+	}
+}
+
 static int transport_bio_simple_write(BIO* bio, const char* buf, int size)
 {
 	int error;
@@ -121,6 +151,7 @@ static int transport_bio_simple_write(BIO* bio, const char* buf, int size)
 	if (status <= 0)
 	{
 		error = WSAGetLastError();
+		WLog_VRB(TAG, "wsa last error: %d", error);
 
 		if ((error == WSAEWOULDBLOCK) || (error == WSAEINTR) || (error == WSAEINPROGRESS) ||
 		    (error == WSAEALREADY))
@@ -133,6 +164,7 @@ static int transport_bio_simple_write(BIO* bio, const char* buf, int size)
 		}
 	}
 
+//	string_hexdump((BYTE*)buf, status);
 	return status;
 }
 
@@ -151,8 +183,11 @@ static int transport_bio_simple_read(BIO* bio, char* buf, int size)
 
 	if (status > 0)
 	{
+//		string_hexdump((BYTE*)buf, status);
 		return status;
 	}
+
+	WLog_VRB(TAG, "READ STATUS: %d", status);
 
 	if (status == 0)
 	{
@@ -161,6 +196,8 @@ static int transport_bio_simple_read(BIO* bio, char* buf, int size)
 	}
 
 	error = WSAGetLastError();
+
+	WLog_VRB(TAG, "wsa last error: 0x%08x   last status: %d", error, status);
 
 	if ((error == WSAEWOULDBLOCK) || (error == WSAEINTR) || (error == WSAEINPROGRESS) ||
 	    (error == WSAEALREADY))
@@ -824,11 +861,17 @@ static BOOL freerdp_tcp_connect_timeout(rdpContext* context, int sockfd, struct 
 	}
 
 	handles[count++] = context->abortEvent;
+	char* addrd = freerdp_tcp_get_peer_address(sockfd);
+	WLog_INFO(TAG, "freerdp_tcp_connect_timeout: %s", addrd);
+	free(addrd);
+
 	status = _connect(sockfd, addr, addrlen);
 
 	if (status < 0)
 	{
+		WLog_ERR(TAG, "_connect failed with %d", status);
 		status = WSAGetLastError();
+		WLog_ERR(TAG, "_connect last error %d", status);
 
 		switch (status)
 		{

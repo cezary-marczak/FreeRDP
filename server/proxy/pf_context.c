@@ -38,6 +38,8 @@ static wHashTable* create_channel_ids_map()
 	return table;
 }
 
+#define TAG FREERDP_TAG("core.contexxt")
+
 /* Proxy context initialization callback */
 static BOOL client_to_proxy_context_new(freerdp_peer* client, rdpContext* ctx)
 {
@@ -49,19 +51,27 @@ static BOOL client_to_proxy_context_new(freerdp_peer* client, rdpContext* ctx)
 
 	context->vcm = WTSOpenServerA((LPSTR)client->context);
 
-	if (!context->vcm || context->vcm == INVALID_HANDLE_VALUE)
+	if (!context->vcm || context->vcm == INVALID_HANDLE_VALUE) {
+		WLog_ERR(TAG, "context->vcm || context->vcm");
 		goto error;
+	}
 
-	if (!(context->dynvcReady = CreateEvent(NULL, TRUE, FALSE, NULL)))
+	if (!(context->dynvcReady = CreateEvent(NULL, TRUE, FALSE, NULL))) {
+		WLog_ERR(TAG, "dynvcReady = CreateEvent");
 		goto error;
+	}
 
 	context->vc_handles = (HANDLE*)calloc(config->PassthroughCount, sizeof(HANDLE));
-	if (!context->vc_handles)
+	if (!context->vc_handles) {
+		WLog_ERR(TAG, "!context->vc_handles");
 		goto error;
+	}
 
 	context->vc_ids = create_channel_ids_map();
-	if (!context->vc_ids)
+	if (!context->vc_ids) {
+		WLog_ERR(TAG, "!context->vc_ids");
 		goto error;
+	}
 
 	return TRUE;
 

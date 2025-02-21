@@ -104,6 +104,7 @@ struct p_client_context
 	rdpBitmap* bitmap;
 	rdpGlyph* glyph;
 	rdpPointer* pointer;
+	BOOL is_native;
 };
 typedef struct p_client_context pClientContext;
 

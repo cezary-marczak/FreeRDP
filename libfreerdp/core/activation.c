@@ -471,6 +471,7 @@ BOOL rdp_server_accept_client_font_list_pdu(rdpRdp* rdp, wStream* s)
 	if (!rdp_send_server_font_map_pdu(rdp))
 		return FALSE;
 
+	// transport_set_blocking_mode(rdp->transport, FALSE);
 	if (rdp_server_transition_to_state(rdp, CONNECTION_STATE_ACTIVE) < 0)
 		return FALSE;
 

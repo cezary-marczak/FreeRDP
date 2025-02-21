@@ -225,6 +225,21 @@ static BOOL freerdp_peer_initialize(freerdp_peer* client)
 		}
 	}
 
+
+	// settings->BitmapCacheEnabled = 1;
+	// settings->OffscreenSupportLevel = 1;
+	// settings->GlyphSupportLevel = GLYPH_SUPPORT_NONE;
+
+	/* Claim support only for specific updates, independent of FreeRDP defaults */
+//	ZeroMemory(rdp_settings->OrderSupport, GUAC_RDP_ORDER_SUPPORT_LENGTH);
+//	rdp_settings->OrderSupport[NEG_DSTBLT_INDEX] = TRUE;
+//	rdp_settings->OrderSupport[NEG_SCRBLT_INDEX] = TRUE;
+//	rdp_settings->OrderSupport[NEG_MEMBLT_INDEX] = !guac_settings->disable_bitmap_caching;
+//	rdp_settings->OrderSupport[NEG_MEMBLT_V2_INDEX] = !guac_settings->disable_bitmap_caching;
+//	rdp_settings->OrderSupport[NEG_GLYPH_INDEX_INDEX] = !guac_settings->disable_glyph_caching;
+//	rdp_settings->OrderSupport[NEG_FAST_INDEX_INDEX] = !guac_settings->disable_glyph_caching;
+//	rdp_settings->OrderSupport[NEG_FAST_GLYPH_INDEX] = !guac_settings->disable_glyph_caching;
+
 	return TRUE;
 }
 
@@ -1012,6 +1027,8 @@ static LicenseCallbackResult freerdp_peer_nolicense(freerdp_peer* peer, wStream*
 	return LICENSE_CB_COMPLETED;
 }
 
+char PEER_DEB[] = "PEER";
+
 BOOL freerdp_peer_context_new(freerdp_peer* client)
 {
 	rdpRdp* rdp;
@@ -1056,7 +1073,7 @@ BOOL freerdp_peer_context_new(freerdp_peer* client)
 		goto fail_error_description;
 	}
 
-	if (!transport_attach(rdp->transport, client->sockfd))
+	if (!transport_attach(rdp->transport, client->sockfd, PEER_DEB))
 		goto fail_transport_attach;
 
 	rdp->transport->ReceiveCallback = peer_recv_callback;

@@ -474,6 +474,11 @@ BOOL gdi_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmapUpdate)
 	if (!context || !bitmapUpdate || !context->gdi || !context->codecs)
 		return FALSE;
 
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->additional_update && pc->additional_update->BitmapUpdate)
+		if (pc->additional_update && pc->additional_update->BitmapUpdate(context, bitmapUpdate) == FALSE)
+			WLog_ERR(TAG, "pc->additional_update->primary->BitmapUpdate failed");
+
 	for (index = 0; index < bitmapUpdate->number; index++)
 	{
 		const BITMAP_DATA* bitmap = &(bitmapUpdate->rectangles[index]);
@@ -535,6 +540,8 @@ static BOOL gdi_palette_update(rdpContext* context, const PALETTE_UPDATE* palett
 
 static BOOL gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 {
+	WLog_INFO(TAG, "DOBRE GDI");
+
 	rdpGdi* gdi;
 
 	if (!context)
@@ -551,8 +558,8 @@ static BOOL gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 		gdi_SetNullClipRgn(gdi->drawing->hdc);
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update->SetBounds)
-		if (pc->additional_update->SetBounds(context, bounds) == FALSE)
+	if (pc->additional_update && pc->additional_update->SetBounds)
+		if (pc->additional_update && pc->additional_update->SetBounds(context, bounds) == FALSE)
 			WLog_ERR(TAG, "pc->additional_update->primary->SetBounds failed");
 
 	return TRUE;
@@ -560,6 +567,8 @@ static BOOL gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 
 static BOOL gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 {
+	WLog_INFO(TAG, "gdi_dstblt - DOBRE GDI");
+
 	rdpGdi* gdi;
 
 	if (!context || !dstblt)
@@ -570,8 +579,8 @@ static BOOL gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 	                      dstblt->nHeight, NULL, 0, 0, gdi_rop3_code(dstblt->bRop), &gdi->palette);
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update->primary->DstBlt)
-		if (pc->additional_update->primary->DstBlt(context, dstblt) == FALSE)
+	if (pc->additional_update && pc->additional_update->primary->DstBlt)
+		if (pc->additional_update && pc->additional_update->primary->DstBlt(context, dstblt) == FALSE)
 			WLog_ERR(TAG, "pc->additional_update->primary->DstBlt failed");
 
 	return ret;
@@ -579,6 +588,8 @@ static BOOL gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 
 static BOOL gdi_patblt(rdpContext* context, PATBLT_ORDER* patblt)
 {
+	WLog_INFO(TAG, "gdi_patblt - DOBRE GDI");
+
 	const rdpBrush* brush = &patblt->brush;
 	UINT32 foreColor;
 	UINT32 backColor;
@@ -674,8 +685,8 @@ static BOOL gdi_patblt(rdpContext* context, PATBLT_ORDER* patblt)
 	}
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update->primary->PatBlt)
-		if (pc->additional_update->primary->PatBlt(context, patblt) == FALSE)
+	if (pc->additional_update && pc->additional_update->primary->PatBlt)
+		if (pc->additional_update && pc->additional_update->primary->PatBlt(context, patblt) == FALSE)
 			WLog_ERR(TAG, "pc->additional_update->primary->PatBlt failed");
 
 out_error:
@@ -688,6 +699,8 @@ out_error:
 
 static BOOL gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 {
+	WLog_INFO(TAG, "gdi_scrblt - DOBRE GDI");
+
 	rdpGdi* gdi;
 
 	if (!context || !context->gdi)
@@ -699,8 +712,8 @@ static BOOL gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 	                  gdi_rop3_code(scrblt->bRop), &gdi->palette);
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update->primary->ScrBlt)
-		if (pc->additional_update->primary->ScrBlt(context, scrblt) == FALSE)
+	if (pc->additional_update && pc->additional_update->primary->ScrBlt)
+		if (pc->additional_update && pc->additional_update->primary->ScrBlt(context, scrblt) == FALSE)
 			WLog_ERR(TAG, "pc->additional_update->primary->ScrBlt failed");
 
 	return ret;
@@ -708,6 +721,8 @@ static BOOL gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 
 static BOOL gdi_opaque_rect(rdpContext* context, const OPAQUE_RECT_ORDER* opaque_rect)
 {
+	WLog_INFO(TAG, "gdi_opaque_rect - DOBRE GDI");
+
 	GDI_RECT rect;
 	HGDI_BRUSH hBrush;
 	UINT32 brush_color;
@@ -730,8 +745,8 @@ static BOOL gdi_opaque_rect(rdpContext* context, const OPAQUE_RECT_ORDER* opaque
 	gdi_DeleteObject((HGDIOBJECT)hBrush);
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update->primary->OpaqueRect)
-		if (pc->additional_update->primary->OpaqueRect(context, opaque_rect) == FALSE)
+	if (pc->additional_update && pc->additional_update->primary->OpaqueRect)
+		if (pc->additional_update && pc->additional_update->primary->OpaqueRect(context, opaque_rect) == FALSE)
 			WLog_ERR(TAG, "pc->additional_update->primary->OpaqueRect failed");
 
 	return ret;
@@ -843,6 +858,8 @@ static BOOL gdi_polyline(rdpContext* context, const POLYLINE_ORDER* polyline)
 
 static BOOL gdi_memblt(rdpContext* context, MEMBLT_ORDER* memblt)
 {
+	WLog_INFO(TAG, "gdi_memblt - DOBRE GDI");
+
 	gdiBitmap* bitmap;
 	rdpGdi* gdi;
 
@@ -856,8 +873,8 @@ static BOOL gdi_memblt(rdpContext* context, MEMBLT_ORDER* memblt)
 	                  gdi_rop3_code(memblt->bRop), &gdi->palette);
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update->primary->MemBlt)
-		if (pc->additional_update->primary->MemBlt(context, memblt) == FALSE)
+	if (pc->additional_update && pc->additional_update->primary->MemBlt)
+		if (pc->additional_update && pc->additional_update->primary->MemBlt(context, memblt) == FALSE)
 			WLog_ERR(TAG, "pc->additional_update->primary->MemBlt failed");
 
 	return ret;
@@ -1363,6 +1380,7 @@ BOOL gdi_init_ex(freerdp* instance, UINT32 format, UINT32 stride, BYTE* buffer,
 	if (!gdi_register_graphics(instance->context->graphics))
 		goto fail;
 
+	WLog_INFO(TAG, "GDI initialized !!!!!");
 	return TRUE;
 fail:
 	gdi_free(instance);

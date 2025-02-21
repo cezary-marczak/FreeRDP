@@ -174,6 +174,74 @@ static BOOL pf_client_use_peer_load_balance_info(pClientContext* pc)
 	return TRUE;
 }
 
+static void print_settings_all(const rdpSettings* settings) {
+	size_t x;
+	SSIZE_T type = 0;
+
+	printf("%s\t%50s\t%s\t%s", "<index>", "<key>", "<type>", "<default value>\n");
+	for (x = 0; x < FreeRDP_Settings_StableAPI_MAX; x++)
+	{
+		const char* name = freerdp_settings_get_name_for_key(x);
+		type = freerdp_settings_get_type_for_key(x);
+
+		switch (type)
+		{
+			case RDP_SETTINGS_TYPE_BOOL:
+				printf("%" PRIuz "\t%50s\tBOOL\t%s\n", x, name,
+				       freerdp_settings_get_bool(settings, x) ? "TRUE" : "FALSE");
+				break;
+			case RDP_SETTINGS_TYPE_UINT16:
+				printf("%" PRIuz "\t%50s\tUINT16\t%" PRIu16 "\n", x, name,
+				       freerdp_settings_get_uint16(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_INT16:
+				printf("%" PRIuz "\t%50s\tINT16\t%" PRId16 "\n", x, name,
+				       freerdp_settings_get_int16(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_UINT32:
+				printf("%" PRIuz "\t%50s\tUINT32\t%" PRIu32 "\n", x, name,
+				       freerdp_settings_get_uint32(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_INT32:
+				printf("%" PRIuz "\t%50s\tINT32\t%" PRId32 "\n", x, name,
+				       freerdp_settings_get_int32(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_UINT64:
+				printf("%" PRIuz "\t%50s\tUINT64\t%" PRIu64 "\n", x, name,
+				       freerdp_settings_get_uint64(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_INT64:
+				printf("%" PRIuz "\t%50s\tINT64\t%" PRId64 "\n", x, name,
+				       freerdp_settings_get_int64(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_STRING:
+				printf("%" PRIuz "\t%50s\tSTRING\t%s"
+				       "\n",
+				       x, name, freerdp_settings_get_string(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_POINTER:
+				const void* pointer = freerdp_settings_get_pointer(settings, x);
+				if (x == FreeRDP_OrderSupport) {
+					const BYTE* bp = (const BYTE*)pointer;
+					printf("%" PRIuz "\t%50s\tBYTE\t0x",
+					       x, name);
+					for (int li = 0; li < 32; li++)
+					{
+						printf("%01X", *bp);
+						bp++;
+					}
+					printf("\n");
+				}
+				printf("%" PRIuz "\t%50s\tPOINTER\t%p"
+				       "\n",
+				       x, name, pointer);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
 static BOOL pf_client_pre_connect(freerdp* instance)
 {
 	pClientContext* pc = (pClientContext*)instance->context;
@@ -246,6 +314,8 @@ static BOOL pf_client_pre_connect(freerdp* instance)
 		LOG_ERR(TAG, pc, "Failed to load addins");
 		return FALSE;
 	}
+
+	print_settings_all(instance->settings);
 
 	return TRUE;
 }
@@ -337,6 +407,8 @@ static BOOL pf_client_post_connect(freerdp* instance)
 
 	if (!settings->SoftwareGdi)
 	{
+		WLog_INFO(TAG, "NO GDI !!!!!");
+
 		if (!pf_register_graphics(context->graphics))
 		{
 			LOG_ERR(TAG, pc, "failed to register graphics");
@@ -351,7 +423,7 @@ static BOOL pf_client_post_connect(freerdp* instance)
 		palette_cache_register_callbacks(update);
 	}
 
-	pf_client_register_update_callbacks(update);
+	pf_client_register_update_callbacks(update, pc->additional_update);
 
 	/* virtual channels receive data hook */
 	client_receive_channel_data_original = instance->ReceiveChannelData;
@@ -458,7 +530,7 @@ static BOOL pf_client_connect_without_nla(pClientContext* pc)
 // Function to read credentials from a file
 static BOOL read_credentials_from_file(const char* input_username, const char* target_server, char* password, size_t password_len)
 {
-	const char* filePath = "/var/lib/procyon/ssl/rdpservers.json";
+	const char* filePath = "/etc/procyon/rdpservers.json";
 	FILE* file = fopen(filePath, "r");
 	if (!file)
 	{
@@ -605,45 +677,48 @@ static BOOL pf_client_connect(freerdp* instance)
 	crypto_base64_decode(encoded_hostname, strlen(encoded_hostname), &decoded_hostname, &decoded_len);
 	if (!decoded_hostname)
 	{
-		LOG_ERR(TAG, pc, "Failed to decode server hostname");
-		return FALSE;
+		LOG_WARN(TAG, pc, "Failed to decode server hostname");
 	}
-
-	char* server_hostname = (char*)calloc(decoded_len + 1, sizeof(char));
-	if (!server_hostname)
+	else
 	{
-		free(decoded_hostname);
-		LOG_ERR(TAG, pc, "Failed to allocate memory for hostname");
-		return FALSE;
-	}
-	memcpy(server_hostname, decoded_hostname, decoded_len);
-	server_hostname[decoded_len] = '\0';
+		char* server_hostname = (char*)calloc(decoded_len + 1, sizeof(char));
+		if (!server_hostname)
+		{
+			free(decoded_hostname);
+			LOG_ERR(TAG, pc, "Failed to allocate memory for hostname");
+			return FALSE;
+		}
+		memcpy(server_hostname, decoded_hostname, decoded_len);
+		server_hostname[decoded_len] = '\0';
+		LOG_INFO(TAG, pc, "Decoded hostname: %s", server_hostname);
 
-	const char* username = freerdp_settings_get_string(settings, FreeRDP_Username);
+		const char* username = freerdp_settings_get_string(settings, FreeRDP_Username);
 
-	if (!username)
-	{
-		LOG_ERR(TAG, pc, "Username is not set in settings");
-		return FALSE;
-	}
+		if (!username)
+		{
+			LOG_ERR(TAG, pc, "Username is not set in settings");
+			return FALSE;
+		}
 
-	LOG_INFO(TAG, pc, "connecting to target server %s with username: %s", server_hostname, username);
+		LOG_INFO(TAG, pc, "connecting to target server %s with username: %s", server_hostname,
+		         username);
 
-	// Read credentials from file
-	if (!read_credentials_from_file(username, server_hostname, password, sizeof(password)))
-	{
-		free(decoded_hostname);
-		free(server_hostname);
-		LOG_ERR(TAG, pc, "Failed to read credentials from file");
-		return FALSE;
-	}
+		// Read credentials from file
+		if (!read_credentials_from_file(username, server_hostname, password, sizeof(password)))
+		{
+			free(decoded_hostname);
+			free(server_hostname);
+			LOG_ERR(TAG, pc, "Failed to read credentials from file");
+			return FALSE;
+		}
 
-	// Set the credentials in the settings
-	if (!freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
-	    !freerdp_settings_set_string(settings, FreeRDP_ServerHostname, server_hostname))
-	{
-		LOG_ERR(TAG, pc, "Failed to set credentials in settings");
-		return FALSE;
+		// Set the credentials in the settings
+		if (!freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
+		    !freerdp_settings_set_string(settings, FreeRDP_ServerHostname, server_hostname))
+		{
+			LOG_ERR(TAG, pc, "Failed to set credentials in settings");
+			return FALSE;
+		}
 	}
 
 	LOG_INFO(TAG, pc, "connecting using client info: Username: %s, Domain: %s", settings->Username,

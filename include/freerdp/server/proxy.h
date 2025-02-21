@@ -107,6 +107,8 @@ typedef struct proxy_server
 	rdpBitmap* bitmap;
 	rdpGlyph* glyph;
 	rdpPointer* pointer;
+	BOOL is_native;
+	void (*guac_flush)(void* guacamole_client);
 } proxyServer;
 
 #ifdef __cplusplus

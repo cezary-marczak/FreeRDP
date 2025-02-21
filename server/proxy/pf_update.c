@@ -58,7 +58,7 @@ static BOOL pf_client_begin_paint(rdpContext* context)
 	rdpContext* ps = (rdpContext*)pdata->ps;
 	WLog_DBG(TAG, __FUNCTION__);
 	BOOL ret = ps->update->BeginPaint(ps);
-	if (pc->additional_update->BeginPaint)
+	if (pc->additional_update && pc->additional_update->BeginPaint)
 		pc->additional_update->BeginPaint((rdpContext*)pc);
 	return ret;
 }
@@ -80,7 +80,7 @@ static BOOL pf_client_end_paint(rdpContext* context)
 	/* proxy end paint */
 	BOOL ret = ps->update->EndPaint(ps);
 
-	if (pc->additional_update->EndPaint)
+	if (pc->additional_update && pc->additional_update->EndPaint)
 		pc->additional_update->EndPaint((rdpContext*)pc);
 
 	if (!ret)
@@ -105,13 +105,14 @@ static BOOL pf_client_end_paint(rdpContext* context)
 
 static BOOL pf_client_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmap)
 {
+	WLog_INFO(TAG, "PF BITMAP UPDATE");
 	pClientContext* pc = (pClientContext*)context;
 	proxyData* pdata = pc->pdata;
 	rdpContext* ps = (rdpContext*)pdata->ps;
 	WLog_DBG(TAG, __FUNCTION__);
 	BOOL ret = ps->update->BitmapUpdate(ps, bitmap);
-	if (pc->additional_update->BitmapUpdate)
-		pc->additional_update->BitmapUpdate((rdpContext*)pc, bitmap);
+//	if (pc->additional_update && pc->additional_update->BitmapUpdate)
+//		pc->additional_update->BitmapUpdate((rdpContext*)pc, bitmap);
 	return ret;
 }
 
@@ -124,7 +125,7 @@ static BOOL pf_client_desktop_resize(rdpContext* context)
 	ps->settings->DesktopWidth = context->settings->DesktopWidth;
 	ps->settings->DesktopHeight = context->settings->DesktopHeight;
 	BOOL ret = ps->update->DesktopResize(ps);
-	if (pc->additional_update->DesktopResize)
+	if (pc->additional_update && pc->additional_update->DesktopResize)
 		pc->additional_update->DesktopResize((rdpContext*)pc);
 	return ret;
 }
@@ -152,6 +153,8 @@ static BOOL pf_client_send_pointer_system(rdpContext* context,
 static BOOL pf_client_send_pointer_position(rdpContext* context,
                                             const POINTER_POSITION_UPDATE* pointerPosition)
 {
+	WLog_INFO(TAG, "pf_client_send_pointer_position - PF");
+
 	pClientContext* pc = (pClientContext*)context;
 	proxyData* pdata = pc->pdata;
 	rdpContext* ps = (rdpContext*)pdata->ps;
@@ -383,11 +386,14 @@ void pf_server_register_update_callbacks(rdpUpdate* update)
 	update->SuppressOutput = pf_server_suppress_output;
 }
 
-void pf_client_register_update_callbacks(rdpUpdate* update)
+void pf_client_register_update_callbacks(rdpUpdate* update, rdpUpdate* additional_update)
 {
 	update->BeginPaint = pf_client_begin_paint;
 	update->EndPaint = pf_client_end_paint;
-	update->BitmapUpdate = pf_client_bitmap_update;
+
+	if (additional_update)
+		additional_update->BitmapUpdate = pf_client_bitmap_update;
+
 	update->DesktopResize = pf_client_desktop_resize;
 	update->RemoteMonitors = pf_client_remote_monitors;
 	update->SaveSessionInfo = pf_client_save_session_info;

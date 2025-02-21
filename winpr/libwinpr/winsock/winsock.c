@@ -26,6 +26,8 @@
 
 #include <winpr/winsock.h>
 
+#include "wlog/Message.h"
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -1030,15 +1032,20 @@ int closesocket(SOCKET s)
 	status = close(fd);
 	return status;
 }
+#define TAG ("com.freerdp.winsock")
 
 int _connect(SOCKET s, const struct sockaddr* name, int namelen)
 {
+	WLog_VRB(TAG, "_connect called");
+
 	int status;
 	int fd = (int)s;
 	status = connect(fd, name, (socklen_t)namelen);
 
-	if (status < 0)
+	if (status < 0) {
+		WLog_ERR(TAG, "connect failed with error: %d", status);
 		return SOCKET_ERROR;
+	}
 
 	return status;
 }
