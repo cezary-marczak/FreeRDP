@@ -374,13 +374,17 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	}
 
 	rdp->inPackets++;
-	if (freerdp_shall_disconnect(rdp->instance))
+	if (freerdp_shall_disconnect(rdp->instance)) {
+		WLog_ERR(TAG, "shall disconnect");
 		return 0;
+	}
 
 	if (rdp->settings->UseRdpSecurityLayer)
 	{
-		if (!rdp_read_security_header(s, &securityFlags, &length))
+		if (!rdp_read_security_header(s, &securityFlags, &length)) {
+			WLog_ERR(TAG, "rdp_read_security_header");
 			return -1;
+		}
 
 		if (securityFlags & SEC_ENCRYPT)
 		{
@@ -395,8 +399,11 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	if (channelId == MCS_GLOBAL_CHANNEL_ID)
 	{
 		UINT16 pduLength, remain;
-		if (!rdp_read_share_control_header(s, &pduLength, &remain, &pduType, &pduSource))
+		if (!rdp_read_share_control_header(s, &pduLength, &remain, &pduType, &pduSource)) {
+			WLog_ERR(TAG, "rdp_read_share_control_header");
+
 			return -1;
+		}
 
 		client->settings->PduSource = pduSource;
 
@@ -404,41 +411,56 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 		switch (pduType)
 		{
 			case PDU_TYPE_DATA:
-				if (!peer_recv_data_pdu(client, s, pduLength))
+				if (!peer_recv_data_pdu(client, s, pduLength)) {
+					WLog_ERR(TAG, "peer_recv_data_pdu");
+
 					return -1;
+				}
 
 				break;
 
 			case PDU_TYPE_CONFIRM_ACTIVE:
-				if (!rdp_server_accept_confirm_active(rdp, s, pduLength))
+				if (!rdp_server_accept_confirm_active(rdp, s, pduLength)) {
+					WLog_ERR(TAG, "rdp_server_accept_confirm_active");
+
 					return -1;
+				}
 
 				break;
 
 			case PDU_TYPE_FLOW_RESPONSE:
 			case PDU_TYPE_FLOW_STOP:
 			case PDU_TYPE_FLOW_TEST:
-				if (!Stream_SafeSeek(s, remain))
+				if (!Stream_SafeSeek(s, remain)) {
+					WLog_ERR(TAG, "Stream_SafeSeek");
+
 					return -1;
+				}
 				break;
 
 			default:
-				WLog_ERR(TAG, "Client sent pduType %" PRIu16 "", pduType);
+				WLog_ERR(TAG, "Client sent pduType %" PRIu16 "", pduType); {}
 				return -1;
 		}
 	}
 	else if ((rdp->mcs->messageChannelId > 0) && (channelId == rdp->mcs->messageChannelId))
 	{
 		if (!rdp->settings->UseRdpSecurityLayer)
-			if (!rdp_read_security_header(s, &securityFlags, NULL))
+			if (!rdp_read_security_header(s, &securityFlags, NULL)) {
+				WLog_ERR(TAG, "rdp_read_security_header");
+
 				return -1;
+			}
 
 		return rdp_recv_message_channel_pdu(rdp, s, securityFlags);
 	}
 	else
 	{
-		if (!freerdp_channel_peer_process(client, s, channelId))
+		if (!freerdp_channel_peer_process(client, s, channelId)) {
+			WLog_ERR(TAG, "freerdp_channel_peer_process");
+
 			return -1;
+		}
 	}
 	if (!tpkt_ensure_stream_consumed(s, length))
 		return -1;
@@ -477,10 +499,15 @@ static int peer_recv_fastpath_pdu(freerdp_peer* client, wStream* s)
 
 static int peer_recv_pdu(freerdp_peer* client, wStream* s)
 {
-	if (tpkt_verify_header(s))
-		return peer_recv_tpkt_pdu(client, s);
-	else
-		return peer_recv_fastpath_pdu(client, s);
+	int ret;
+	if (tpkt_verify_header(s)) {
+		WLog_ERR(TAG, "Incorrect TPKT header.");
+		ret = peer_recv_tpkt_pdu(client, s);
+	} else {
+		WLog_ERR(TAG, "Correct TPKT header.");
+		ret =  peer_recv_fastpath_pdu(client, s);
+	}
+	return ret;
 }
 
 static int peer_recv_callback(rdpTransport* transport, wStream* s, void* extra)
@@ -1027,7 +1054,7 @@ static LicenseCallbackResult freerdp_peer_nolicense(freerdp_peer* peer, wStream*
 	return LICENSE_CB_COMPLETED;
 }
 
-char PEER_DEB[] = "PEER";
+// char PEER_DEB[] = "PEER";
 
 BOOL freerdp_peer_context_new(freerdp_peer* client)
 {
@@ -1073,7 +1100,7 @@ BOOL freerdp_peer_context_new(freerdp_peer* client)
 		goto fail_error_description;
 	}
 
-	if (!transport_attach(rdp->transport, client->sockfd, PEER_DEB))
+	if (!transport_attach(rdp->transport, client->sockfd))
 		goto fail_transport_attach;
 
 	rdp->transport->ReceiveCallback = peer_recv_callback;

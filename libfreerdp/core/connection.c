@@ -1473,7 +1473,6 @@ int rdp_server_transition_to_state(rdpRdp* rdp, int state)
 			break;
 
 		case CONNECTION_STATE_NEGO:
-			printf("rdp_set_state(rdp, CONNECTION_STATE_NEGO);\n");
 			rdp_set_state(rdp, CONNECTION_STATE_NEGO);
 			break;
 

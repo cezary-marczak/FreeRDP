@@ -84,8 +84,6 @@ typedef enum
 
 typedef LicenseCallbackResult (*psPeerLicenseCallback)(freerdp_peer* peer, wStream* s);
 
-
-
 struct rdp_freerdp_peer
 {
 	rdpContext* context;

@@ -664,63 +664,63 @@ static BOOL pf_client_connect(freerdp* instance)
 	               freerdp_settings_get_string(settings, FreeRDP_ClientHostname));
 
 	// Get base64 encoded hostname
-	const char* encoded_hostname = freerdp_settings_get_string(settings, FreeRDP_ServerHostname);
-	if (!encoded_hostname)
-	{
-		LOG_ERR(TAG, pc, "Server hostname not set");
-		return FALSE;
-	}
-
-	// Decode hostname
-	size_t decoded_len = 0;
-	BYTE* decoded_hostname = NULL;
-	crypto_base64_decode(encoded_hostname, strlen(encoded_hostname), &decoded_hostname, &decoded_len);
-	if (!decoded_hostname)
-	{
-		LOG_WARN(TAG, pc, "Failed to decode server hostname");
-	}
-	else
-	{
-		char* server_hostname = (char*)calloc(decoded_len + 1, sizeof(char));
-		if (!server_hostname)
-		{
-			free(decoded_hostname);
-			LOG_ERR(TAG, pc, "Failed to allocate memory for hostname");
-			return FALSE;
-		}
-		memcpy(server_hostname, decoded_hostname, decoded_len);
-		server_hostname[decoded_len] = '\0';
-		LOG_INFO(TAG, pc, "Decoded hostname: %s", server_hostname);
-
-		const char* username = freerdp_settings_get_string(settings, FreeRDP_Username);
-
-		if (!username)
-		{
-			LOG_ERR(TAG, pc, "Username is not set in settings");
-			return FALSE;
-		}
-
-		LOG_INFO(TAG, pc, "connecting to target server %s with username: %s", server_hostname,
-		         username);
-
-		// Read credentials from file
-		if (!read_credentials_from_file(username, server_hostname, password, sizeof(password)))
-		{
-			free(decoded_hostname);
-			free(server_hostname);
-			LOG_ERR(TAG, pc, "Failed to read credentials from file");
-			return FALSE;
-		}
-
-		// Set the credentials in the settings
-		if (!freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
-		    !freerdp_settings_set_string(settings, FreeRDP_ServerHostname, server_hostname))
-		{
-			LOG_ERR(TAG, pc, "Failed to set credentials in settings");
-			return FALSE;
-		}
-	}
-
+	// const char* encoded_hostname = freerdp_settings_get_string(settings, FreeRDP_ServerHostname);
+	// if (!encoded_hostname)
+	// {
+	// 	LOG_ERR(TAG, pc, "Server hostname not set");
+	// 	return FALSE;
+	// }
+	//
+	// // Decode hostname
+	// size_t decoded_len = 0;
+	// BYTE* decoded_hostname = NULL;
+	// crypto_base64_decode(encoded_hostname, strlen(encoded_hostname), &decoded_hostname, &decoded_len);
+	// if (!decoded_hostname)
+	// {
+	// 	LOG_WARN(TAG, pc, "Failed to decode server hostname");
+	// }
+	// else
+	// {
+	// 	char* server_hostname = (char*)calloc(decoded_len + 1, sizeof(char));
+	// 	if (!server_hostname)
+	// 	{
+	// 		free(decoded_hostname);
+	// 		LOG_ERR(TAG, pc, "Failed to allocate memory for hostname");
+	// 		return FALSE;
+	// 	}
+	// 	memcpy(server_hostname, decoded_hostname, decoded_len);
+	// 	server_hostname[decoded_len] = '\0';
+	// 	LOG_INFO(TAG, pc, "Decoded hostname: %s", server_hostname);
+	//
+	// 	const char* username = freerdp_settings_get_string(settings, FreeRDP_Username);
+	//
+	// 	if (!username)
+	// 	{
+	// 		LOG_ERR(TAG, pc, "Username is not set in settings");
+	// 		return FALSE;
+	// 	}
+	//
+	// 	LOG_INFO(TAG, pc, "connecting to target server %s with username: %s", server_hostname,
+	// 	         username);
+	//
+	// 	// Read credentials from file
+	// 	if (!read_credentials_from_file(username, server_hostname, password, sizeof(password)))
+	// 	{
+	// 		free(decoded_hostname);
+	// 		free(server_hostname);
+	// 		LOG_ERR(TAG, pc, "Failed to read credentials from file");
+	// 		return FALSE;
+	// 	}
+	//
+	// 	// Set the credentials in the settings
+	// 	if (!freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
+	// 	    !freerdp_settings_set_string(settings, FreeRDP_ServerHostname, server_hostname))
+	// 	{
+	// 		LOG_ERR(TAG, pc, "Failed to set credentials in settings");
+	// 		return FALSE;
+	// 	}
+	// }
+	//
 	LOG_INFO(TAG, pc, "connecting using client info: Username: %s, Domain: %s", settings->Username,
 	         settings->Domain);
 
