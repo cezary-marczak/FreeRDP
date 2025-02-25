@@ -499,10 +499,13 @@ void WSASetLastError(int iError)
 	}
 }
 
+#define TAG ("com.freerdp.winsock")
+
+
 int WSAGetLastError(void)
 {
 	int iError = 0;
-
+	// WLog_VRB(TAG, "Last Error: %d", errn);
 	switch (errno)
 	{
 		/* Base error codes */
@@ -1032,18 +1035,17 @@ int closesocket(SOCKET s)
 	status = close(fd);
 	return status;
 }
-#define TAG ("com.freerdp.winsock")
 
 int _connect(SOCKET s, const struct sockaddr* name, int namelen)
 {
-	WLog_VRB(TAG, "_connect called");
+	// WLog_VRB(TAG, "_connect called");
 
 	int status;
 	int fd = (int)s;
 	status = connect(fd, name, (socklen_t)namelen);
 
 	if (status < 0) {
-		WLog_ERR(TAG, "connect failed with error: %d", status);
+		// WLog_ERR(TAG, "connect failed with error: %d, errno: %d", status, errno);
 		return SOCKET_ERROR;
 	}
 

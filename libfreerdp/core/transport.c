@@ -225,59 +225,59 @@ wStream* transport_send_stream_init(rdpTransport* transport, int size)
 	return s;
 }
 
-static void print_bio_chain(BIO *bio, const char *prefix) {
-	BIO *current = bio;
-	while (current) {
-		long type = BIO_method_type(current);
-		const char *name = BIO_method_name(current);
-//		printf("%s  -  BIO type: %ld (%s)\n", prefix, type, name);
-		current = BIO_next(current);
-	}
-}
+// static void print_bio_chain(BIO *bio, const char *prefix) {
+// 	BIO *current = bio;
+// 	while (current) {
+// 		long type = BIO_method_type(current);
+// 		const char *name = BIO_method_name(current);
+// //		printf("%s  -  BIO type: %ld (%s)\n", prefix, type, name);
+// 		current = BIO_next(current);
+// 	}
+// }
+//
+// static long bio_debug_callback(BIO *b, int oper, const char *argp, int argi,
+//                                long argl, long ret)
+// {
+// 	if (BIO_cb_pre(oper))
+// 		return ret;
+//
+// 	const char* op = "unknown";
+// 	if (BIO_CB_return(BIO_CB_READ) == oper) {
+// 		op = "read";
+// 	} else if (BIO_CB_return(BIO_CB_WRITE) == oper) {
+// 		op = "write";
+// 	} else if (BIO_CB_return(BIO_CB_PUTS) == oper) {
+// 		op = "puts";
+// 	} else if (BIO_CB_return(BIO_CB_GETS) == oper) {
+// 		op = "gets";
+// 	} else if (BIO_CB_return(BIO_CB_CTRL) == oper) {
+// 		if (argi == BIO_C_GET_FD) {
+// 			return ret;
+// 		}
+// 		op = "ctrl";
+// 	}
+//
+// //	WLog_VRB(TAG, "--- START ---");
+// //	print_bio_chain(b, "bio_debug_callback");
+//
+// 	const char* dbarg = BIO_get_callback_arg(b);
+// 	if (!dbarg)
+// 		dbarg = "not set";
+// //	long long processed_len = -1;
+// //	if (processed)
+// //		processed_len = *processed;
+//
+// //	int fd = BIO_get_fd(b, NULL);
+//
+// //	WLog_VRB(TAG, "BIO fd: %d, op: %s, arg: '%s', argi: %d, argl: %ld, ret: %ld",
+// //	         fd, op, dbarg, argi, argl, ret);
+//
+// //	WLog_VRB(TAG, "--- END ---");
+//
+// 	return ret;
+// }
 
-static long bio_debug_callback(BIO *b, int oper, const char *argp, int argi,
-                               long argl, long ret)
-{
-	if (BIO_cb_pre(oper))
-		return ret;
-
-	const char* op = "unknown";
-	if (BIO_CB_return(BIO_CB_READ) == oper) {
-		op = "read";
-	} else if (BIO_CB_return(BIO_CB_WRITE) == oper) {
-		op = "write";
-	} else if (BIO_CB_return(BIO_CB_PUTS) == oper) {
-		op = "puts";
-	} else if (BIO_CB_return(BIO_CB_GETS) == oper) {
-		op = "gets";
-	} else if (BIO_CB_return(BIO_CB_CTRL) == oper) {
-		if (argi == BIO_C_GET_FD) {
-			return ret;
-		}
-		op = "ctrl";
-	}
-
-//	WLog_VRB(TAG, "--- START ---");
-//	print_bio_chain(b, "bio_debug_callback");
-
-	const char* dbarg = BIO_get_callback_arg(b);
-	if (!dbarg)
-		dbarg = "not set";
-//	long long processed_len = -1;
-//	if (processed)
-//		processed_len = *processed;
-
-//	int fd = BIO_get_fd(b, NULL);
-
-//	WLog_VRB(TAG, "BIO fd: %d, op: %s, arg: '%s', argi: %d, argl: %ld, ret: %ld",
-//	         fd, op, dbarg, argi, argl, ret);
-
-//	WLog_VRB(TAG, "--- END ---");
-
-	return ret;
-}
-
-BOOL transport_attach(rdpTransport* transport, int sockfd, char* debugarg)
+BOOL transport_attach(rdpTransport* transport, int sockfd)
 {
 	BIO* socketBio = NULL;
 	BIO* bufferedBio;
@@ -408,7 +408,7 @@ BOOL transport_connect_nla(rdpTransport* transport)
 	return TRUE;
 }
 
-char SERVER_DEB[] = "SERVER";
+// char SERVER_DEB[] = "SERVER";
 
 BOOL transport_connect(rdpTransport* transport, const char* hostname, UINT16 port, DWORD timeout)
 {
@@ -482,7 +482,7 @@ BOOL transport_connect(rdpTransport* transport, const char* hostname, UINT16 por
 		if (sockfd < 0)
 			return FALSE;
 
-		if (!transport_attach(transport, sockfd, SERVER_DEB))
+		if (!transport_attach(transport, sockfd))
 			return FALSE;
 
 		if (isProxyConnection)
@@ -1153,7 +1153,7 @@ BOOL transport_set_blocking_mode(rdpTransport* transport, BOOL blocking)
 {
 	transport->blocking = blocking;
 
-	WLog_VRB(TAG, "Set blocking mode: %p -> %s", transport, blocking ? "TRUE" : "FALSE");
+	// WLog_VRB(TAG, "Set blocking mode: %p -> %s", transport, blocking ? "TRUE" : "FALSE");
 
 	if (!BIO_set_nonblock(transport->frontBio, blocking ? FALSE : TRUE))
 		return FALSE;
