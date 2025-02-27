@@ -74,7 +74,7 @@ HGDI_BITMAP gdi_create_bitmap(rdpGdi* gdi, UINT32 nWidth, UINT32 nHeight, UINT32
 
 static BOOL gdi_Bitmap_New(rdpContext* context, rdpBitmap* bitmap)
 {
-	WLog_INFO(TAG, "DOBRE GDI");
+//	WLog_INFO(TAG, "DOBRE GDI");
 
 	gdiBitmap* gdi_bitmap;
 	rdpGdi* gdi = context->gdi;
@@ -135,22 +135,20 @@ static void gdi_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 
 static BOOL gdi_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 {
-	WLog_INFO(TAG, "gdi_Bitmap_Paint - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_Bitmap_Paint - DOBRE GDI");
 	gdiBitmap* gdi_bitmap = (gdiBitmap*)bitmap;
 	UINT32 width = bitmap->right - bitmap->left + 1;
 	UINT32 height = bitmap->bottom - bitmap->top + 1;
 	BOOL ret = gdi_BitBlt(context->gdi->primary->hdc, bitmap->left, bitmap->top, width, height,
 	                  gdi_bitmap->hdc, 0, 0, GDI_SRCCOPY, &context->gdi->palette);
 
-	WLog_INFO(TAG, "about to run callback");
+	// WLog_INFO(TAG, "about to run callback");
 
 	pClientContext* pc = (pClientContext*)context;
 	if (pc->bitmap && pc->bitmap->Paint)
 	{
 		if (pc->bitmap->Paint(context, bitmap) == FALSE)
 			WLog_INFO(TAG, "pc->bitmap->Paint failed");
-		else
-			WLog_INFO(TAG, "pc->bitmap->Paint success");
 	}
 	return ret;
 }
@@ -222,7 +220,7 @@ static BOOL gdi_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap, const 
 
 static BOOL gdi_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, BOOL primary)
 {
-	WLog_INFO(TAG, "gdi_Bitmap_SetSurface - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_Bitmap_SetSurface - DOBRE GDI");
 
 	rdpGdi* gdi;
 
@@ -250,7 +248,7 @@ static BOOL gdi_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, BOOL p
 /* Glyph Class */
 static BOOL gdi_Glyph_New(rdpContext* context, const rdpGlyph* glyph)
 {
-	WLog_INFO(TAG, "gdi_Glyph_New - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_Glyph_New - DOBRE GDI");
 
 	BYTE* data;
 	gdiGlyph* gdi_glyph;
@@ -315,7 +313,7 @@ static void gdi_Glyph_Free(rdpContext* context, rdpGlyph* glyph)
 static BOOL gdi_Glyph_Draw(rdpContext* context, const rdpGlyph* glyph, INT32 x, INT32 y, INT32 w,
                            INT32 h, INT32 sx, INT32 sy, BOOL fOpRedundant)
 {
-	WLog_INFO(TAG, "gdi_Glyph_Draw - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_Glyph_Draw - DOBRE GDI");
 
 	gdiGlyph* gdi_glyph;
 	rdpGdi* gdi;
@@ -392,7 +390,7 @@ static BOOL gdi_Glyph_SetBounds(rdpContext* context, INT32 x, INT32 y, INT32 wid
 static BOOL gdi_Glyph_BeginDraw(rdpContext* context, INT32 x, INT32 y, INT32 width, INT32 height,
                                 UINT32 bgcolor, UINT32 fgcolor, BOOL fOpRedundant)
 {
-	WLog_INFO(TAG, "gdi_Glyph_BeginDraw - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_Glyph_BeginDraw - DOBRE GDI");
 
 	rdpGdi* gdi;
 
@@ -458,7 +456,7 @@ static BOOL gdi_Glyph_BeginDraw(rdpContext* context, INT32 x, INT32 y, INT32 wid
 static BOOL gdi_Glyph_EndDraw(rdpContext* context, INT32 x, INT32 y, INT32 width, INT32 height,
                               UINT32 bgcolor, UINT32 fgcolor)
 {
-	WLog_INFO(TAG, "DOBRE GDI");
+//	WLog_INFO(TAG, "DOBRE GDI");
 
 	rdpGdi* gdi;
 

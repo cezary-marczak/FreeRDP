@@ -102,6 +102,7 @@ typedef struct proxy_server
 	wCountdownEvent* waitGroup; /* wait group used for graceful shutdown */
 	HANDLE thread;              /* main server thread - freerdp listener thread */
 	HANDLE stopEvent;           /* an event used to signal the main thread to stop */
+
 	void* guacamole_client;
 	rdpUpdate* additional_update;
 	rdpBitmap* bitmap;
@@ -109,6 +110,11 @@ typedef struct proxy_server
 	rdpPointer* pointer;
 	BOOL is_native;
 	void (*guac_flush)(void* guacamole_client);
+
+	BOOL (*start_recording)(const char* principal);
+	HANDLE start_recording_event;
+	const char* conn_name;
+	wArrayList* allowed_principals;
 } proxyServer;
 
 #ifdef __cplusplus

@@ -540,7 +540,7 @@ static BOOL gdi_palette_update(rdpContext* context, const PALETTE_UPDATE* palett
 
 static BOOL gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 {
-	WLog_INFO(TAG, "DOBRE GDI");
+//	WLog_INFO(TAG, "DOBRE GDI");
 
 	rdpGdi* gdi;
 
@@ -567,7 +567,7 @@ static BOOL gdi_set_bounds(rdpContext* context, const rdpBounds* bounds)
 
 static BOOL gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 {
-	WLog_INFO(TAG, "gdi_dstblt - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_dstblt - DOBRE GDI");
 
 	rdpGdi* gdi;
 
@@ -588,7 +588,7 @@ static BOOL gdi_dstblt(rdpContext* context, const DSTBLT_ORDER* dstblt)
 
 static BOOL gdi_patblt(rdpContext* context, PATBLT_ORDER* patblt)
 {
-	WLog_INFO(TAG, "gdi_patblt - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_patblt - DOBRE GDI");
 
 	const rdpBrush* brush = &patblt->brush;
 	UINT32 foreColor;
@@ -699,7 +699,7 @@ out_error:
 
 static BOOL gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 {
-	WLog_INFO(TAG, "gdi_scrblt - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_scrblt - DOBRE GDI");
 
 	rdpGdi* gdi;
 
@@ -721,7 +721,7 @@ static BOOL gdi_scrblt(rdpContext* context, const SCRBLT_ORDER* scrblt)
 
 static BOOL gdi_opaque_rect(rdpContext* context, const OPAQUE_RECT_ORDER* opaque_rect)
 {
-	WLog_INFO(TAG, "gdi_opaque_rect - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_opaque_rect - DOBRE GDI");
 
 	GDI_RECT rect;
 	HGDI_BRUSH hBrush;
@@ -858,7 +858,7 @@ static BOOL gdi_polyline(rdpContext* context, const POLYLINE_ORDER* polyline)
 
 static BOOL gdi_memblt(rdpContext* context, MEMBLT_ORDER* memblt)
 {
-	WLog_INFO(TAG, "gdi_memblt - DOBRE GDI");
+//	WLog_INFO(TAG, "gdi_memblt - DOBRE GDI");
 
 	gdiBitmap* bitmap;
 	rdpGdi* gdi;

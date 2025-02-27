@@ -105,7 +105,7 @@ static BOOL pf_client_end_paint(rdpContext* context)
 
 static BOOL pf_client_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmap)
 {
-	WLog_INFO(TAG, "PF BITMAP UPDATE");
+	// WLog_INFO(TAG, "PF BITMAP UPDATE");
 	pClientContext* pc = (pClientContext*)context;
 	proxyData* pdata = pc->pdata;
 	rdpContext* ps = (rdpContext*)pdata->ps;
@@ -153,7 +153,7 @@ static BOOL pf_client_send_pointer_system(rdpContext* context,
 static BOOL pf_client_send_pointer_position(rdpContext* context,
                                             const POINTER_POSITION_UPDATE* pointerPosition)
 {
-	WLog_INFO(TAG, "pf_client_send_pointer_position - PF");
+	// WLog_INFO(TAG, "pf_client_send_pointer_position - PF");
 
 	pClientContext* pc = (pClientContext*)context;
 	proxyData* pdata = pc->pdata;

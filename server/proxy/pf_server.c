@@ -158,7 +158,15 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 		LOG_ERR(TAG, ps, "[%s]: pf_context_create_client_context failed!");
 		return FALSE;
 	}
-	proxyServer* server = (proxyServer*)peer->ContextExtra;
+	proxyServer* server = peer->ContextExtra;
+
+	WLog_INFO(TAG, "Principal name: %s", peer->settings->Username);
+	if (server->allowed_principals != NULL && !ArrayList_Contains(server->allowed_principals, peer->settings->Username))
+	{
+		LOG_ERR(TAG, ps, "Principal %s is not allowed to connect", peer->settings->Username);
+		return FALSE;
+	}
+
 	pc->client = server->guacamole_client;
 	pc->additional_update = server->additional_update;
 	pc->bitmap = server->bitmap;
@@ -185,6 +193,7 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 		LOG_INFO(TAG, ps, "failed to initialize server's channels!");
 		return FALSE;
 	}
+	LOG_INFO(TAG, ps, "CZARAS PO MODULACH");
 
 	/* Start a proxy's client in it's own thread */
 	if (!(pdata->client_thread = CreateThread(NULL, 0, pf_client_start, pc, 0, NULL)))
@@ -579,6 +588,10 @@ proxyServer* pf_server_new(proxyConfig* config)
 	if (!server->stopEvent)
 		goto out;
 
+	server->start_recording_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (!server->start_recording_event)
+		goto out;
+
 	server->clients = ArrayList_New(TRUE);
 	if (!server->clients)
 		goto out;
@@ -633,6 +646,9 @@ void pf_server_free(proxyServer* server)
 
 	if (server->stopEvent)
 		CloseHandle(server->stopEvent);
+
+	if (server->start_recording_event)
+		CloseHandle(server->start_recording_event);
 
 	if (server->thread)
 		CloseHandle(server->thread);
