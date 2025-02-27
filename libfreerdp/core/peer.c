@@ -382,7 +382,7 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	if (rdp->settings->UseRdpSecurityLayer)
 	{
 		if (!rdp_read_security_header(s, &securityFlags, &length)) {
-			WLog_ERR(TAG, "rdp_read_security_header");
+			// WLog_ERR(TAG, "rdp_read_security_header");
 			return -1;
 		}
 
@@ -390,7 +390,7 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 		{
 			if (!rdp_decrypt(rdp, s, &length, securityFlags))
 			{
-				WLog_ERR(TAG, "rdp_decrypt failed");
+				// WLog_ERR(TAG, "rdp_decrypt failed");
 				return -1;
 			}
 		}
@@ -400,19 +400,19 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	{
 		UINT16 pduLength, remain;
 		if (!rdp_read_share_control_header(s, &pduLength, &remain, &pduType, &pduSource)) {
-			WLog_ERR(TAG, "rdp_read_share_control_header");
+			// WLog_ERR(TAG, "rdp_read_share_control_header");
 
 			return -1;
 		}
 
 		client->settings->PduSource = pduSource;
 
-		WLog_DBG(TAG, "Received %s", pdu_type_to_str(pduType));
+		// WLog_DBG(TAG, "Received %s", pdu_type_to_str(pduType));
 		switch (pduType)
 		{
 			case PDU_TYPE_DATA:
 				if (!peer_recv_data_pdu(client, s, pduLength)) {
-					WLog_ERR(TAG, "peer_recv_data_pdu");
+					// WLog_ERR(TAG, "peer_recv_data_pdu");
 
 					return -1;
 				}
@@ -421,7 +421,7 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 
 			case PDU_TYPE_CONFIRM_ACTIVE:
 				if (!rdp_server_accept_confirm_active(rdp, s, pduLength)) {
-					WLog_ERR(TAG, "rdp_server_accept_confirm_active");
+					// WLog_ERR(TAG, "rdp_server_accept_confirm_active");
 
 					return -1;
 				}
@@ -432,7 +432,7 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 			case PDU_TYPE_FLOW_STOP:
 			case PDU_TYPE_FLOW_TEST:
 				if (!Stream_SafeSeek(s, remain)) {
-					WLog_ERR(TAG, "Stream_SafeSeek");
+					// WLog_ERR(TAG, "Stream_SafeSeek");
 
 					return -1;
 				}
@@ -447,7 +447,7 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	{
 		if (!rdp->settings->UseRdpSecurityLayer)
 			if (!rdp_read_security_header(s, &securityFlags, NULL)) {
-				WLog_ERR(TAG, "rdp_read_security_header");
+				// WLog_ERR(TAG, "rdp_read_security_header");
 
 				return -1;
 			}
@@ -457,7 +457,7 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	else
 	{
 		if (!freerdp_channel_peer_process(client, s, channelId)) {
-			WLog_ERR(TAG, "freerdp_channel_peer_process");
+			// WLog_ERR(TAG, "freerdp_channel_peer_process");
 
 			return -1;
 		}
@@ -501,10 +501,10 @@ static int peer_recv_pdu(freerdp_peer* client, wStream* s)
 {
 	int ret;
 	if (tpkt_verify_header(s)) {
-		WLog_ERR(TAG, "Incorrect TPKT header.");
+		// WLog_ERR(TAG, "Incorrect TPKT header.");
 		ret = peer_recv_tpkt_pdu(client, s);
 	} else {
-		WLog_ERR(TAG, "Correct TPKT header.");
+		// WLog_ERR(TAG, "Correct TPKT header.");
 		ret =  peer_recv_fastpath_pdu(client, s);
 	}
 	return ret;

@@ -158,13 +158,38 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 		LOG_ERR(TAG, ps, "[%s]: pf_context_create_client_context failed!");
 		return FALSE;
 	}
-	proxyServer* server = (proxyServer*)peer->ContextExtra;
-	pc->client = server->guacamole_client;
-	pc->additional_update = server->additional_update;
-	pc->bitmap = server->bitmap;
-	pc->glyph = server->glyph;
-	pc->pointer = server->pointer;
-	pc->is_native = server->is_native;
+	proxyServer* server = peer->ContextExtra;
+
+	WLog_INFO(TAG, "Principal name: %s", peer->settings->Username);
+	if (server->allowed_principals != NULL && !ArrayList_Contains(server->allowed_principals, peer->settings->Username))
+	{
+		LOG_ERR(TAG, ps, "Principal %s is not allowed to connect", peer->settings->Username);
+		return FALSE;
+	}
+
+	if (server->start_recording != NULL) {
+		int ret = server->start_recording(server, peer->settings->Username);
+
+		if (ret < 0) {
+			LOG_ERR(TAG, ps, "Failed to start recording for principal %s: %d", peer->settings->Username, ret);
+			SetEvent(server->start_recording_event);
+			return FALSE;
+		}
+
+		if (ret == 0) {
+			LOG_WARN(TAG, ps, "Skipping recording for principal %s", peer->settings->Username);
+		}
+		else {
+			pc->client = server->guacamole_client;
+			pc->additional_update = server->additional_update;
+			pc->bitmap = server->bitmap;
+			pc->glyph = server->glyph;
+			pc->pointer = server->pointer;
+			pc->is_native = server->is_native;
+			LOG_INFO(TAG, ps, "Recording started for principal %s", peer->settings->Username);
+		}
+		SetEvent(server->start_recording_event);
+	}
 
 	client_settings = pc->context.settings;
 
@@ -185,6 +210,7 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 		LOG_INFO(TAG, ps, "failed to initialize server's channels!");
 		return FALSE;
 	}
+	LOG_INFO(TAG, ps, "CZARAS PO MODULACH");
 
 	/* Start a proxy's client in it's own thread */
 	if (!(pdata->client_thread = CreateThread(NULL, 0, pf_client_start, pc, 0, NULL)))
@@ -579,6 +605,10 @@ proxyServer* pf_server_new(proxyConfig* config)
 	if (!server->stopEvent)
 		goto out;
 
+	server->start_recording_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (!server->start_recording_event)
+		goto out;
+
 	server->clients = ArrayList_New(TRUE);
 	if (!server->clients)
 		goto out;
@@ -633,6 +663,9 @@ void pf_server_free(proxyServer* server)
 
 	if (server->stopEvent)
 		CloseHandle(server->stopEvent);
+
+	if (server->start_recording_event)
+		CloseHandle(server->start_recording_event);
 
 	if (server->thread)
 		CloseHandle(server->thread);
@@ -712,11 +745,12 @@ BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
 
 	client->ContextExtra = server;
 
-	if (!pf_server_start_peer(client)) {
+	if (pf_server_start_peer(client)) {
 		WLog_ERR(TAG, "pf_server_start_peer failed");
 		goto fail;
 	}
 
+	freerdp_peer_free(client);
 	return TRUE;
 
 fail:
