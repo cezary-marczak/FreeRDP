@@ -750,7 +750,6 @@ BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
 		goto fail;
 	}
 
-	freerdp_peer_free(client);
 	return TRUE;
 
 fail:
