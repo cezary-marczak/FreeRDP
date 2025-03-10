@@ -745,7 +745,7 @@ BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
 
 	client->ContextExtra = server;
 
-	if (pf_server_start_peer(client)) {
+	if (!pf_server_start_peer(client)) {
 		WLog_ERR(TAG, "pf_server_start_peer failed");
 		goto fail;
 	}
