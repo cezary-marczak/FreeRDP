@@ -145,20 +145,16 @@ static BOOL pf_Glyph_EndDraw(rdpContext* context, INT32 x, INT32 y, INT32 width,
 /* Graphics Module */
 BOOL pf_register_pointer(rdpGraphics* graphics)
 {
-	rdpPointer* pointer = NULL;
-
-	if (!(pointer = (rdpPointer*)calloc(1, sizeof(rdpPointer))))
-		return FALSE;
-
-	pointer->size = sizeof(rdpPointer);
-	pointer->New = pf_Pointer_New;
-	pointer->Free = pf_Pointer_Free;
-	pointer->Set = pf_Pointer_Set;
-	pointer->SetNull = pf_Pointer_SetNull;
-	pointer->SetDefault = pf_Pointer_SetDefault;
-	pointer->SetPosition = pf_Pointer_SetPosition;
-	graphics_register_pointer(graphics, pointer);
-	free(pointer);
+	pClientContext* pc = graphics->context;
+	rdpPointer pointer = *graphics->Pointer_Prototype;
+	pointer.size = sizeof(rdpPointer);
+	pointer.New = pc->pointer->New;
+	pointer.Free = pc->pointer->Free;
+	pointer.Set = pc->pointer->Set;
+	pointer.SetNull = pc->pointer->SetNull;
+	pointer.SetDefault = pc->pointer->SetDefault;
+	pointer.SetPosition = pc->pointer->SetPosition;
+	graphics_register_pointer(graphics, &pointer);
 	return TRUE;
 }
 

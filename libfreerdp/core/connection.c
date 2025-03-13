@@ -441,7 +441,7 @@ static BOOL rdp_client_reconnect_channels(rdpRdp* rdp, BOOL redirect)
 		if (redirect)
 			return TRUE;
 
-		pointer_cache_register_callbacks(context->update);
+		pointer_cache_register_callbacks_pf(context->update);
 
 		if (!IFCALLRESULT(FALSE, context->instance->PostConnect, context->instance))
 			return FALSE;

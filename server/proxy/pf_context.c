@@ -184,6 +184,88 @@ BOOL pf_context_copy_settings(rdpSettings* dst, const rdpSettings* src)
 	return TRUE;
 }
 
+static void print_settings_all_ctx(const rdpSettings* settings, const int only) {
+	size_t x;
+	SSIZE_T type = 0;
+
+	printf("%s\t%50s\t%s\t%s", "<index>", "<key>", "<type>", "<default value>\n");
+	for (x = 0; x < FreeRDP_Settings_StableAPI_MAX; x++)
+	{
+		if (only && x != only)
+			continue;
+
+		const char* name = freerdp_settings_get_name_for_key(x);
+		type = freerdp_settings_get_type_for_key(x);
+
+		switch (type)
+		{
+			case RDP_SETTINGS_TYPE_BOOL:
+				printf("%" PRIuz "\t%50s\tBOOL\t%s\n", x, name,
+				       freerdp_settings_get_bool(settings, x) ? "TRUE" : "FALSE");
+				break;
+			case RDP_SETTINGS_TYPE_UINT16:
+				printf("%" PRIuz "\t%50s\tUINT16\t%" PRIu16 "\n", x, name,
+				       freerdp_settings_get_uint16(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_INT16:
+				printf("%" PRIuz "\t%50s\tINT16\t%" PRId16 "\n", x, name,
+				       freerdp_settings_get_int16(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_UINT32:
+				printf("%" PRIuz "\t%50s\tUINT32\t%" PRIu32 "\n", x, name,
+				       freerdp_settings_get_uint32(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_INT32:
+				printf("%" PRIuz "\t%50s\tINT32\t%" PRId32 "\n", x, name,
+				       freerdp_settings_get_int32(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_UINT64:
+				printf("%" PRIuz "\t%50s\tUINT64\t%" PRIu64 "\n", x, name,
+				       freerdp_settings_get_uint64(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_INT64:
+				printf("%" PRIuz "\t%50s\tINT64\t%" PRId64 "\n", x, name,
+				       freerdp_settings_get_int64(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_STRING:
+				printf("%" PRIuz "\t%50s\tSTRING\t%s"
+				       "\n",
+				       x, name, freerdp_settings_get_string(settings, x));
+				break;
+			case RDP_SETTINGS_TYPE_POINTER:
+				const void* pointer = freerdp_settings_get_pointer(settings, x);
+				if (x == FreeRDP_OrderSupport) {
+					const BYTE* bp = (const BYTE*)pointer;
+					printf("%" PRIuz "\t%50s\tBYTE\t0x",
+					       x, name);
+					for (int li = 0; li < 32; li++)
+					{
+						printf("%01X", *bp);
+						bp++;
+					}
+					printf("\n");
+				}
+				if (x == FreeRDP_BitmapCacheV2CellInfo) {
+					const BITMAP_CACHE_V2_CELL_INFO* bitmapCacheV2CellInfo = (const BITMAP_CACHE_V2_CELL_INFO*)pointer;
+					printf("%" PRIuz "\t%50s\tCZARAS BITMAP V2 CELL INFO\t0x",
+						   x, name);
+					for (int li = 0; li < settings->BitmapCacheV2NumCells; li++)
+					{
+						printf("ID: %d: 0x%04X;\t", li, bitmapCacheV2CellInfo[li].numEntries);
+					}
+					printf("\n");
+				}
+				printf("%" PRIuz "\t%50s\tPOINTER\t%p"
+				       "\n",
+				       x, name, pointer);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+
 pClientContext* pf_context_create_client_context(rdpSettings* clientSettings)
 {
 	RDP_CLIENT_ENTRY_POINTS clientEntryPoints;
@@ -199,6 +281,9 @@ pClientContext* pf_context_create_client_context(rdpSettings* clientSettings)
 
 	if (!pf_context_copy_settings(context->settings, clientSettings))
 		goto error;
+
+	WLog_INFO(TAG, "CZARAS: Client settings copied");
+	print_settings_all_ctx(context->settings, 0);
 
 	pc->vc_ids = create_channel_ids_map();
 	if (!pc->vc_ids)

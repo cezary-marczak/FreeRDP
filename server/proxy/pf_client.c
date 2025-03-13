@@ -232,6 +232,16 @@ static void print_settings_all(const rdpSettings* settings) {
 					}
 					printf("\n");
 				}
+				if (x == FreeRDP_BitmapCacheV2CellInfo) {
+					const BITMAP_CACHE_V2_CELL_INFO* bitmapCacheV2CellInfo = (const BITMAP_CACHE_V2_CELL_INFO*)pointer;
+					printf("%" PRIuz "\t%50s\tCZARAS BITMAP V2 CELL INFO\t0x",
+						   x, name);
+					for (int li = 0; li < settings->BitmapCacheV2NumCells; li++)
+					{
+						printf("ID: %d: 0x%04X;\t", li, bitmapCacheV2CellInfo[li].numEntries);
+					}
+					printf("\n");
+				}
 				printf("%" PRIuz "\t%50s\tPOINTER\t%p"
 				       "\n",
 				       x, name, pointer);
@@ -399,6 +409,8 @@ static BOOL pf_client_post_connect(freerdp* instance)
 		LOG_ERR(TAG, pc, "frames dir created: %s", pc->frames_dir);
 	}
 
+	WLog_INFO(TAG, "CZARAS przed gdi_init");
+	print_settings_all(instance->settings);
 	if (!gdi_init(instance, PIXEL_FORMAT_BGRX32))
 		return FALSE;
 
@@ -424,7 +436,7 @@ static BOOL pf_client_post_connect(freerdp* instance)
 	}
 
 	pf_client_register_update_callbacks(update, pc->additional_update);
-
+	pointer_cache_register_callbacks_pf(update);
 	/* virtual channels receive data hook */
 	client_receive_channel_data_original = instance->ReceiveChannelData;
 	instance->ReceiveChannelData = pf_client_receive_channel_data_hook;
