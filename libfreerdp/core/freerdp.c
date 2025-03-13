@@ -219,7 +219,7 @@ BOOL freerdp_connect(freerdp* instance)
 
 	if (status)
 	{
-		pointer_cache_register_callbacks(instance->context->update);
+		pointer_cache_register_callbacks_pf(instance->context->update);
 		IFCALLRET(instance->PostConnect, status, instance);
 		instance->ConnectionCallbackState = CLIENT_STATE_POSTCONNECT_PASSED;
 

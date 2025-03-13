@@ -655,12 +655,15 @@ int fastpath_recv_updates(rdpFastPath* fastpath, wStream* s)
 
 	while (Stream_GetRemainingLength(s) >= 3)
 	{
+		WLog_DBG(TAG, "before fastpath_recv_update_data()");
+
 		if (fastpath_recv_update_data(fastpath, s) < 0)
 		{
 			WLog_ERR(TAG, "fastpath_recv_update_data() fail");
 			rc = -3;
 			goto fail;
 		}
+		WLog_DBG(TAG, "after fastpath_recv_update_data()");
 	}
 
 	rc = 0;
@@ -805,6 +808,8 @@ static BOOL fastpath_recv_input_event(rdpFastPath* fastpath, wStream* s)
 
 	if (!fastpath_read_input_event_header(s, &eventFlags, &eventCode))
 		return FALSE;
+
+	WLog_DBG(TAG, "input eventFlags: eventCode: 0x%02" PRIX8 ", evFlags 0x%02" PRIX8, eventCode, eventFlags);
 
 	switch (eventCode)
 	{

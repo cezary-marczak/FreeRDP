@@ -123,3 +123,14 @@ static BOOL pf_gdi_surface_bits(rdpContext* context, const SURFACE_BITS_COMMAND*
 	WLog_INFO(TAG, __FUNCTION__);
 	return TRUE;
 }
+
+void pf_gdi_register_update_callbacks(rdpUpdate* update)
+{
+	rdpPrimaryUpdate* primary = update->primary;
+	primary->MultiOpaqueRect = pf_gdi_multi_opaque_rect;
+	primary->LineTo = pf_gdi_line_to;
+	primary->Polyline = pf_gdi_polyline;
+	primary->Mem3Blt = pf_gdi_mem3blt;
+	primary->PolygonSC = pf_gdi_polygon_sc;
+	primary->PolygonCB = pf_gdi_polygon_cb;
+}
