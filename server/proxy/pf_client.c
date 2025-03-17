@@ -268,6 +268,13 @@ static BOOL pf_client_pre_connect(freerdp* instance)
 	 */
 	settings->GlyphSupportLevel = GLYPH_SUPPORT_NONE;
 	ZeroMemory(instance->settings->OrderSupport, 32);
+	settings->AllowFontSmoothing = FALSE;
+	settings->AllowDesktopComposition = FALSE;
+	settings->DisableWallpaper = TRUE;
+	settings->DisableFullWindowDrag = TRUE;
+	settings->DisableMenuAnims = TRUE;
+	settings->DisableThemes = TRUE;
+	freerdp_performance_flags_make(settings);
 
 	settings->SupportDynamicChannels = TRUE;
 

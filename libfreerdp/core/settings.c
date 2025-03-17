@@ -343,13 +343,13 @@ rdpSettings* freerdp_settings_new(DWORD flags)
 	settings->DesktopPosY = UINT32_MAX;
 	settings->SoftwareGdi = TRUE;
 	settings->UnmapButtons = FALSE;
-	settings->PerformanceFlags = PERF_FLAG_NONE;
-	settings->AllowFontSmoothing = TRUE;
+	settings->PerformanceFlags = PERF_DISABLE_THEMING | PERF_DISABLE_MENUANIMATIONS | PERF_DISABLE_WALLPAPER | PERF_DISABLE_FULLWINDOWDRAG;
+	settings->AllowFontSmoothing = FALSE;
 	settings->AllowDesktopComposition = FALSE;
-	settings->DisableWallpaper = FALSE;
+	settings->DisableWallpaper = TRUE;
 	settings->DisableFullWindowDrag = TRUE;
 	settings->DisableMenuAnims = TRUE;
-	settings->DisableThemes = FALSE;
+	settings->DisableThemes = TRUE;
 	settings->ConnectionType = CONNECTION_TYPE_LAN;
 	settings->NetworkAutoDetect = TRUE;
 	settings->EncryptionMethods = ENCRYPTION_METHOD_NONE;

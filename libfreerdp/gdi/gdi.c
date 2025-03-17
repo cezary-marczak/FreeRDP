@@ -467,18 +467,19 @@ void gdi_bitmap_free_ex(gdiBitmap* bitmap)
 	}
 }
 
-BOOL gdi_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmapUpdate)
-{
+BOOL gdi_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmapUpdate) {
 	UINT32 index;
 
 	if (!context || !bitmapUpdate || !context->gdi || !context->codecs)
 		return FALSE;
 
 	pClientContext* pc = (pClientContext*)context;
-	if (pc->additional_update && pc->additional_update->BitmapUpdate)
-		if (pc->additional_update && pc->additional_update->BitmapUpdate(context, bitmapUpdate) == FALSE)
+	if (pc->additional_update && pc->additional_update->BitmapUpdate) {
+		if (pc->additional_update && pc->additional_update->BitmapUpdate(context, bitmapUpdate) == FALSE) {
 			WLog_ERR(TAG, "pc->additional_update->primary->BitmapUpdate failed");
-
+		}
+		WLog_INFO(TAG, "pc->additional_update->primary->BitmapUpdate called");
+	}
 	for (index = 0; index < bitmapUpdate->number; index++)
 	{
 		const BITMAP_DATA* bitmap = &(bitmapUpdate->rectangles[index]);
