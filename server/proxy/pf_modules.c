@@ -351,19 +351,6 @@ BOOL pf_modules_init(const char* root_dir, const char** modules, size_t count)
 {
 	size_t i;
 
-	if (!PathFileExistsA(root_dir))
-	{
-		if (!CreateDirectoryA(root_dir, NULL))
-		{
-			WLog_ERR(TAG, "error occurred while creating modules directory: %s", root_dir);
-			return FALSE;
-		}
-
-		return TRUE;
-	}
-
-	WLog_DBG(TAG, "modules root directory: %s", root_dir);
-
 	plugins_list = ArrayList_New(FALSE);
 
 	if (plugins_list == NULL)
@@ -379,6 +366,19 @@ BOOL pf_modules_init(const char* root_dir, const char** modules, size_t count)
 		WLog_ERR(TAG, "[%s]: ArrayList_New failed!", __FUNCTION__);
 		goto error;
 	}
+
+	if (!PathFileExistsA(root_dir))
+	{
+		if (!CreateDirectoryA(root_dir, NULL))
+		{
+			WLog_ERR(TAG, "error occurred while creating modules directory: %s", root_dir);
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
+	WLog_DBG(TAG, "modules root directory: %s", root_dir);
 
 	for (i = 0; i < count; i++)
 	{
