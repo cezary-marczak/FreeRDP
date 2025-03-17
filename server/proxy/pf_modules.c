@@ -67,6 +67,18 @@ static const char* pf_modules_get_hook_type_string(PF_HOOK_TYPE result)
 		return "HOOK_UNKNOWN";
 }
 
+void pf_modules_print_plugins_info(void) {
+	WLog_INFO(TAG, "plugins_list: %p", plugins_list);
+	WLog_INFO(TAG, "handles_list: %p", handles_list);
+	if (plugins_list) {
+		int index;
+		proxyPlugin* plugin;
+		ArrayList_ForEach(plugins_list, proxyPlugin*, index, plugin) {
+			WLog_INFO(TAG, "plugin name: %s, desc: %s", plugin->name, plugin->description);
+		}
+	}
+}
+
 /*
  * runs all hooks of type `type`.
  *

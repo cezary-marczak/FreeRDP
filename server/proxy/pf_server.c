@@ -673,6 +673,10 @@ void pf_server_free(proxyServer* server)
 	free(server);
 }
 
+void pf_server_print_plugins_info() {
+	pf_modules_print_plugins_info();
+}
+
 BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
 {
 	struct sockaddr_storage peer_addr;
@@ -692,6 +696,7 @@ BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
 		WLog_ERR(TAG, "failed to initialize proxy modules!");
 		goto fail;
 	}
+	pf_modules_print_plugins_info();
 
 	WSADATA wsaData;
 	WTSRegisterWtsApiFunctionTable(FreeRDP_InitWtsApi());

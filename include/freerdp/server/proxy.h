@@ -138,6 +138,9 @@ FREERDP_API void pf_server_stop(proxyServer* server);
  */
 FREERDP_API BOOL pf_server_start_with_peer_socket(proxyServer* server, int socket);
 
+	FREERDP_API void pf_server_print_plugins_info(void);
+
+
 #ifdef __cplusplus
 }
 #endif

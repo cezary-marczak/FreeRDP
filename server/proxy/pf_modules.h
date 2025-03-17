@@ -53,6 +53,7 @@ enum _PF_HOOK_TYPE
 BOOL pf_modules_init(const char* root_dir, const char** modules, size_t count);
 BOOL pf_modules_is_plugin_loaded(const char* plugin_name);
 void pf_modules_list_loaded_plugins(void);
+void pf_modules_print_plugins_info(void);
 
 BOOL pf_modules_run_filter(PF_FILTER_TYPE type, proxyData* pdata, void* param);
 BOOL pf_modules_run_hook(PF_HOOK_TYPE type, proxyData* pdata);
