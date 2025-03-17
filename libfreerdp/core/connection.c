@@ -38,6 +38,7 @@
 #include <freerdp/error.h>
 #include <freerdp/listener.h>
 #include <freerdp/cache/pointer.h>
+#include <freerdp/server/pf_context.h>
 
 #include "utils.h"
 
@@ -441,7 +442,11 @@ static BOOL rdp_client_reconnect_channels(rdpRdp* rdp, BOOL redirect)
 		if (redirect)
 			return TRUE;
 
-		pointer_cache_register_callbacks_pf(context->update);
+		pClientContext* pc = (pClientContext*)context;
+		if (pc->is_native)
+			pointer_cache_register_callbacks_pf(context->update);
+		else
+			pointer_cache_register_callbacks(context->update);
 
 		if (!IFCALLRESULT(FALSE, context->instance->PostConnect, context->instance))
 			return FALSE;

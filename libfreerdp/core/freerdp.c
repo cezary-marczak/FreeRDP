@@ -50,6 +50,7 @@
 #include <freerdp/version.h>
 #include <freerdp/log.h>
 #include <freerdp/cache/pointer.h>
+#include <freerdp/server/pf_context.h>
 
 #include "settings.h"
 #include "utils.h"
@@ -219,7 +220,11 @@ BOOL freerdp_connect(freerdp* instance)
 
 	if (status)
 	{
-		pointer_cache_register_callbacks_pf(instance->context->update);
+		pClientContext* pc = (pClientContext*)instance->context;
+		if (pc->is_native)
+			pointer_cache_register_callbacks_pf(instance->context->update);
+		else
+			pointer_cache_register_callbacks(instance->context->update);
 		IFCALLRET(instance->PostConnect, status, instance);
 		instance->ConnectionCallbackState = CLIENT_STATE_POSTCONNECT_PASSED;
 

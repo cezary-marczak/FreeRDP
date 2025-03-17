@@ -65,7 +65,7 @@ static UINT pf_rail_server_handshake(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerHandshake(server, handshake);
 }
 
@@ -74,7 +74,7 @@ static UINT pf_rail_server_handshake_ex(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerHandshakeEx(server, handshakeEx);
 }
 
@@ -82,7 +82,7 @@ static UINT pf_rail_server_sysparam(RailClientContext* client, const RAIL_SYSPAR
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerSysparam(server, sysparam);
 }
 
@@ -91,7 +91,7 @@ static UINT pf_rail_server_local_move_size(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerLocalMoveSize(server, localMoveSize);
 }
 
@@ -100,7 +100,7 @@ static UINT pf_rail_server_min_max_info(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerMinMaxInfo(server, minMaxInfo);
 }
 
@@ -109,7 +109,7 @@ static UINT pf_rail_server_taskbar_info(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerTaskbarInfo(server, taskbarInfo);
 }
 
@@ -118,7 +118,7 @@ static UINT pf_rail_server_langbar_info(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerLangbarInfo(server, langbarInfo);
 }
 
@@ -127,7 +127,7 @@ static UINT pf_rail_server_exec_result(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerExecResult(server, execResult);
 }
 
@@ -136,7 +136,7 @@ static UINT pf_rail_server_z_order_sync(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerZOrderSync(server, zOrderSync);
 }
 
@@ -144,7 +144,7 @@ static UINT pf_rail_server_cloak(RailClientContext* client, const RAIL_CLOAK* cl
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerCloak(server, cloak);
 }
 
@@ -154,7 +154,7 @@ pf_rail_server_power_display_request(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerPowerDisplayRequest(server, powerDisplayRequest);
 }
 
@@ -163,7 +163,7 @@ static UINT pf_rail_server_get_appid_resp(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerGetAppidResp(server, getAppidResp);
 }
 
@@ -172,7 +172,7 @@ static UINT pf_rail_server_get_appid_resp_ex(RailClientContext* client,
 {
 	proxyData* pdata = (proxyData*)client->custom;
 	RailServerContext* server = (RailServerContext*)pdata->ps->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return server->ServerGetAppidRespEx(server, getAppidRespEx);
 }
 
@@ -183,7 +183,7 @@ static UINT pf_rail_client_handshake(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientHandshake(client, handshake);
 }
 
@@ -192,7 +192,7 @@ static UINT pf_rail_client_client_status(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientInformation(client, clientStatus);
 }
 
@@ -200,7 +200,7 @@ static UINT pf_rail_client_exec(RailServerContext* server, const RAIL_EXEC_ORDER
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientExecute(client, exec);
 }
 
@@ -208,7 +208,7 @@ static UINT pf_rail_client_sysparam(RailServerContext* server, const RAIL_SYSPAR
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientSystemParam(client, sysparam);
 }
 
@@ -216,7 +216,7 @@ static UINT pf_rail_client_activate(RailServerContext* server, const RAIL_ACTIVA
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientActivate(client, activate);
 }
 
@@ -224,7 +224,7 @@ static UINT pf_rail_client_sysmenu(RailServerContext* server, const RAIL_SYSMENU
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientSystemMenu(client, sysmenu);
 }
 
@@ -233,7 +233,7 @@ static UINT pf_rail_client_syscommand(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientSystemCommand(client, syscommand);
 }
 
@@ -242,7 +242,7 @@ static UINT pf_rail_client_notify_event(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientNotifyEvent(client, notifyEvent);
 }
 
@@ -251,7 +251,7 @@ static UINT pf_rail_client_window_move(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientWindowMove(client, windowMove);
 }
 
@@ -260,7 +260,7 @@ static UINT pf_rail_client_snap_arrange(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientSnapArrange(client, snapArrange);
 }
 
@@ -269,7 +269,7 @@ static UINT pf_rail_client_get_appid_req(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientGetAppIdRequest(client, getAppidReq);
 }
 
@@ -278,7 +278,7 @@ static UINT pf_rail_client_langbar_info(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientLanguageBarInfo(client, langbarInfo);
 }
 
@@ -287,14 +287,14 @@ static UINT pf_rail_client_language_ime_info(RailServerContext* server,
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientLanguageIMEInfo(client, languageImeInfo);
 }
 
 static UINT pf_rail_client_compartment_info(RailServerContext* server,
                                             const RAIL_COMPARTMENT_INFO_ORDER* compartmentInfo)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return 0;
 }
 
@@ -302,7 +302,7 @@ static UINT pf_rail_client_cloak(RailServerContext* server, const RAIL_CLOAK* cl
 {
 	proxyData* pdata = (proxyData*)server->custom;
 	RailClientContext* client = (RailClientContext*)pdata->pc->rail;
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 	return client->ClientCloak(client, cloak);
 }
 

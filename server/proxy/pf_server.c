@@ -210,7 +210,6 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 		LOG_INFO(TAG, ps, "failed to initialize server's channels!");
 		return FALSE;
 	}
-	LOG_INFO(TAG, ps, "CZARAS PO MODULACH");
 
 	/* Start a proxy's client in it's own thread */
 	if (!(pdata->client_thread = CreateThread(NULL, 0, pf_client_start, pc, 0, NULL)))
@@ -690,7 +689,7 @@ BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
 		goto fail;
 	}
 
-	if (!pf_modules_init(FREERDP_PROXY_PLUGINDIR, (const char**)server->config->Modules,
+	if (!pf_modules_init("/home/guacd/modules", (const char**)server->config->Modules,
 	                     server->config->ModulesCount))
 	{
 		WLog_ERR(TAG, "failed to initialize proxy modules!");

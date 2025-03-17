@@ -281,7 +281,7 @@ BOOL pointer_cache_put(rdpPointerCache* pointer_cache, UINT32 index, rdpPointer*
 static BOOL pf_client_send_pointer_system(rdpContext* context,
                                           const POINTER_SYSTEM_UPDATE* pointer_system)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	BOOL ret = update_pointer_system(context, pointer_system);
 	if (!ret)
@@ -303,7 +303,7 @@ static BOOL pf_client_send_pointer_system(rdpContext* context,
 static BOOL pf_client_send_pointer_position(rdpContext* context,
                                             const POINTER_POSITION_UPDATE* pointerPosition)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	BOOL ret = update_pointer_position(context, pointerPosition);
 	if (!ret)
@@ -321,7 +321,7 @@ static BOOL pf_client_send_pointer_position(rdpContext* context,
 static BOOL pf_client_send_pointer_color(rdpContext* context,
                                          const POINTER_COLOR_UPDATE* pointer_color)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	BOOL ret = update_pointer_color(context, pointer_color);
 	if (!ret)
@@ -339,7 +339,7 @@ static BOOL pf_client_send_pointer_color(rdpContext* context,
 static BOOL pf_client_send_pointer_large(rdpContext* context,
                                          const POINTER_LARGE_UPDATE* pointer_large)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	BOOL ret = update_pointer_large(context, pointer_large);
 	if (!ret)
@@ -356,7 +356,7 @@ static BOOL pf_client_send_pointer_large(rdpContext* context,
 
 static BOOL pf_client_send_pointer_new(rdpContext* context, const POINTER_NEW_UPDATE* pointer_new)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	BOOL ret = update_pointer_new(context, pointer_new);
 	if (!ret)
@@ -374,7 +374,7 @@ static BOOL pf_client_send_pointer_new(rdpContext* context, const POINTER_NEW_UP
 static BOOL pf_client_send_pointer_cached(rdpContext* context,
                                           const POINTER_CACHED_UPDATE* pointer_cached)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	BOOL ret = update_pointer_cached(context, pointer_cached);
 	if (!ret)

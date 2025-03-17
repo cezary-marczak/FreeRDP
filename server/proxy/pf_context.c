@@ -179,6 +179,13 @@ BOOL pf_context_copy_settings(rdpSettings* dst, const rdpSettings* src)
 		free(dst->RdpServerRsaKey);
 		dst->RdpServerRsaKey = NULL;
 	}
+	dst->AllowFontSmoothing = FALSE;
+	dst->AllowDesktopComposition = FALSE;
+	dst->DisableWallpaper = TRUE;
+	dst->DisableFullWindowDrag = TRUE;
+	dst->DisableMenuAnims = TRUE;
+	dst->DisableThemes = TRUE;
+	freerdp_performance_flags_make(dst);
 
 	freerdp_settings_free(before_copy);
 	return TRUE;
@@ -247,8 +254,6 @@ static void print_settings_all_ctx(const rdpSettings* settings, const int only) 
 				}
 				if (x == FreeRDP_BitmapCacheV2CellInfo) {
 					const BITMAP_CACHE_V2_CELL_INFO* bitmapCacheV2CellInfo = (const BITMAP_CACHE_V2_CELL_INFO*)pointer;
-					printf("%" PRIuz "\t%50s\tCZARAS BITMAP V2 CELL INFO\t0x",
-						   x, name);
 					for (int li = 0; li < settings->BitmapCacheV2NumCells; li++)
 					{
 						printf("ID: %d: 0x%04X;\t", li, bitmapCacheV2CellInfo[li].numEntries);
@@ -282,7 +287,7 @@ pClientContext* pf_context_create_client_context(rdpSettings* clientSettings)
 	if (!pf_context_copy_settings(context->settings, clientSettings))
 		goto error;
 
-	WLog_INFO(TAG, "CZARAS: Client settings copied");
+	WLog_INFO(TAG, "Client settings copied");
 	print_settings_all_ctx(context->settings, 0);
 
 	pc->vc_ids = create_channel_ids_map();

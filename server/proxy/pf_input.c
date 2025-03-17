@@ -96,10 +96,9 @@ static BOOL pf_server_mouse_event(rdpInput* input, UINT16 flags, UINT16 x, UINT1
 
 	const rdpPointer* pointer = pc->pointer;
 	if (pointer != NULL) {
-		const int guac_pos_ret = IFCALLRESULT(FALSE, pointer->SetPosition, (rdpContext*)pc, x, y);
-		printf("%s(%d) guac_pos_ret: %d\n", __FUNCTION__, __LINE__, guac_pos_ret);
-	} else {
-		printf("%s(%d) guac_pos_ret: pointer is NULL!\n", __FUNCTION__, __LINE__);
+		if (IFCALLRESULT(FALSE, pointer->SetPosition, (rdpContext*)pc, x, y) == FALSE) {
+			printf("%s(%d) SetPosition failed!\n", __FUNCTION__, __LINE__);
+		}
 	}
 
 	if (!config->Mouse)

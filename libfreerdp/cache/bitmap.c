@@ -46,7 +46,7 @@ static BOOL bitmap_cache_put(rdpBitmapCache* bitmap_cache, UINT32 id, UINT32 ind
 
 static BOOL update_gdi_memblt(rdpContext* context, MEMBLT_ORDER* memblt)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	rdpBitmap* bitmap;
 	rdpCache* cache = context->cache;
@@ -101,7 +101,7 @@ static BOOL update_gdi_mem3blt(rdpContext* context, MEM3BLT_ORDER* mem3blt)
 
 static BOOL update_gdi_cache_bitmap(rdpContext* context, const CACHE_BITMAP_ORDER* cacheBitmap)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	rdpBitmap* bitmap;
 	rdpBitmap* prevBitmap;
@@ -135,7 +135,7 @@ static BOOL update_gdi_cache_bitmap(rdpContext* context, const CACHE_BITMAP_ORDE
 
 BOOL update_gdi_cache_bitmap_v2(rdpContext* context, CACHE_BITMAP_V2_ORDER* cacheBitmapV2)
 {
-	WLog_DBG(TAG, __FUNCTION__);
+	WLog_VRB(TAG, __FUNCTION__);
 
 	rdpBitmap* bitmap;
 	rdpBitmap* prevBitmap;

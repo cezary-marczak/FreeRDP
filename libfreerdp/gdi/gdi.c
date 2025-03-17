@@ -478,7 +478,7 @@ BOOL gdi_bitmap_update(rdpContext* context, const BITMAP_UPDATE* bitmapUpdate) {
 		if (pc->additional_update && pc->additional_update->BitmapUpdate(context, bitmapUpdate) == FALSE) {
 			WLog_ERR(TAG, "pc->additional_update->primary->BitmapUpdate failed");
 		}
-		WLog_INFO(TAG, "pc->additional_update->primary->BitmapUpdate called");
+		WLog_VRB(TAG, "pc->additional_update->primary->BitmapUpdate called");
 	}
 	for (index = 0; index < bitmapUpdate->number; index++)
 	{
