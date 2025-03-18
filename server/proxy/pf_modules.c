@@ -28,7 +28,7 @@
 
 #include "pf_log.h"
 #include "pf_modules.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 #define TAG PROXY_TAG("modules")
 
@@ -65,6 +65,18 @@ static const char* pf_modules_get_hook_type_string(PF_HOOK_TYPE result)
 		return HOOK_TYPE_STRINGS[result];
 	else
 		return "HOOK_UNKNOWN";
+}
+
+void pf_modules_print_plugins_info(void) {
+	WLog_INFO(TAG, "plugins_list: %p", plugins_list);
+	WLog_INFO(TAG, "handles_list: %p", handles_list);
+	if (plugins_list) {
+		int index;
+		proxyPlugin* plugin;
+		ArrayList_ForEach(plugins_list, proxyPlugin*, index, plugin) {
+			WLog_INFO(TAG, "plugin name: %s, desc: %s", plugin->name, plugin->description);
+		}
+	}
 }
 
 /*
@@ -339,19 +351,6 @@ BOOL pf_modules_init(const char* root_dir, const char** modules, size_t count)
 {
 	size_t i;
 
-	if (!PathFileExistsA(root_dir))
-	{
-		if (!CreateDirectoryA(root_dir, NULL))
-		{
-			WLog_ERR(TAG, "error occurred while creating modules directory: %s", root_dir);
-			return FALSE;
-		}
-
-		return TRUE;
-	}
-
-	WLog_DBG(TAG, "modules root directory: %s", root_dir);
-
 	plugins_list = ArrayList_New(FALSE);
 
 	if (plugins_list == NULL)
@@ -367,6 +366,19 @@ BOOL pf_modules_init(const char* root_dir, const char** modules, size_t count)
 		WLog_ERR(TAG, "[%s]: ArrayList_New failed!", __FUNCTION__);
 		goto error;
 	}
+
+	if (!PathFileExistsA(root_dir))
+	{
+		if (!CreateDirectoryA(root_dir, NULL))
+		{
+			WLog_ERR(TAG, "error occurred while creating modules directory: %s", root_dir);
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
+	WLog_DBG(TAG, "modules root directory: %s", root_dir);
 
 	for (i = 0; i < count; i++)
 	{

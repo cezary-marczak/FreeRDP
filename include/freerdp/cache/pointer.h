@@ -49,6 +49,7 @@ extern "C"
 #endif
 
 	FREERDP_API void pointer_cache_register_callbacks(rdpUpdate* update);
+	FREERDP_API void pointer_cache_register_callbacks_pf(rdpUpdate* update);
 
 	FREERDP_API rdpPointerCache* pointer_cache_new(rdpSettings* settings);
 	FREERDP_API void pointer_cache_free(rdpPointerCache* pointer_cache);

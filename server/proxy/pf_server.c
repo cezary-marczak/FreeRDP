@@ -30,12 +30,13 @@
 #include <freerdp/freerdp.h>
 #include <freerdp/channels/wtsvc.h>
 #include <freerdp/channels/channels.h>
+#include <freerdp/server/proxy.h>
+#include <freerdp/build-config.h>
 
-#include "pf_server.h"
 #include "pf_log.h"
-#include "pf_config.h"
+#include <freerdp/server/pf_config.h>
+#include <freerdp/server/pf_context.h>
 #include "pf_client.h"
-#include "pf_context.h"
 #include "pf_update.h"
 #include "pf_rdpgfx.h"
 #include "pf_disp.h"
@@ -46,6 +47,12 @@
 #define TAG PROXY_TAG("server")
 
 static psPeerReceiveChannelData server_receive_channel_data_original = NULL;
+
+typedef struct
+{
+	HANDLE thread;
+	freerdp_peer* client;
+} peer_thread_args;
 
 static BOOL pf_server_parse_target_from_routing_token(rdpContext* context, char** target,
                                                       DWORD* port)
@@ -151,6 +158,38 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 		LOG_ERR(TAG, ps, "[%s]: pf_context_create_client_context failed!");
 		return FALSE;
 	}
+	proxyServer* server = peer->ContextExtra;
+
+	WLog_INFO(TAG, "Principal name: %s", peer->settings->Username);
+	if (server->allowed_principals != NULL && !ArrayList_Contains(server->allowed_principals, peer->settings->Username))
+	{
+		LOG_ERR(TAG, ps, "Principal %s is not allowed to connect", peer->settings->Username);
+		return FALSE;
+	}
+
+	if (server->start_recording != NULL) {
+		int ret = server->start_recording(server, peer->settings->Username);
+
+		if (ret < 0) {
+			LOG_ERR(TAG, ps, "Failed to start recording for principal %s: %d", peer->settings->Username, ret);
+			SetEvent(server->start_recording_event);
+			return FALSE;
+		}
+
+		if (ret == 0) {
+			LOG_WARN(TAG, ps, "Skipping recording for principal %s", peer->settings->Username);
+		}
+		else {
+			pc->client = server->guacamole_client;
+			pc->additional_update = server->additional_update;
+			pc->bitmap = server->bitmap;
+			pc->glyph = server->glyph;
+			pc->pointer = server->pointer;
+			pc->is_native = server->is_native;
+			LOG_INFO(TAG, ps, "Recording started for principal %s", peer->settings->Username);
+		}
+		SetEvent(server->start_recording_event);
+	}
 
 	client_settings = pc->context.settings;
 
@@ -159,7 +198,6 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 
 	if (!pf_server_get_target_info(peer->context, client_settings, pdata->config))
 	{
-
 		LOG_INFO(TAG, ps, "pf_server_get_target_info failed!");
 		return FALSE;
 	}
@@ -282,7 +320,7 @@ static BOOL pf_server_initialize_peer_connection(freerdp_peer* peer)
 	settings->TlsSecurity = config->ServerTlsSecurity;
 	settings->NlaSecurity = FALSE; /* currently NLA is not supported in proxy server */
 	settings->EncryptionLevel = ENCRYPTION_LEVEL_CLIENT_COMPATIBLE;
-	settings->ColorDepth = 32;
+	settings->ColorDepth = 16;
 	settings->SuppressOutput = TRUE;
 	settings->RefreshRect = TRUE;
 	settings->DesktopResize = TRUE;
@@ -321,11 +359,15 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 	freerdp_peer* client = (freerdp_peer*)arg;
 	proxyServer* server = (proxyServer*)client->ContextExtra;
 
-	if (!pf_context_init_server_context(client))
+	if (!pf_context_init_server_context(client)) {
+		WLog_ERR(TAG, "failed to initialize server context");
 		goto out_free_peer;
+	}
 
-	if (!pf_server_initialize_peer_connection(client))
+	if (!pf_server_initialize_peer_connection(client)) {
+		WLog_ERR(TAG, "failed to initialize peer conn");
 		goto out_free_peer;
+	}
 
 	ps = (pServerContext*)client->context;
 	pdata = ps->pdata;
@@ -349,8 +391,11 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 
 			eventCount += tmp;
 		}
+//		WLog_VRB(TAG, "%d EVENT HANDLER: ChannelEvent", eventCount);
 		eventHandles[eventCount++] = ChannelEvent;
+//		WLog_VRB(TAG, "%d EVENT HANDLER: abortEvent", eventCount);
 		eventHandles[eventCount++] = pdata->abort_event;
+//		WLog_VRB(TAG, "%d EVENT HANDLER: WTSVirtualChannelManagerGetEventHandle", eventCount);
 		eventHandles[eventCount++] = WTSVirtualChannelManagerGetEventHandle(ps->vcm);
 		status = WaitForMultipleObjects(eventCount, eventHandles, FALSE, INFINITE);
 
@@ -359,6 +404,8 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 			WLog_ERR(TAG, "WaitForMultipleObjects failed (status: %d)", status);
 			break;
 		}
+
+//		WLog_VRB(TAG, "WaitForMultipleObjects status: %d", status - WAIT_OBJECT_0);
 
 		if (client->CheckFileDescriptor(client) != TRUE)
 			break;
@@ -426,6 +473,20 @@ out_free_peer:
 	CountdownEvent_Signal(server->waitGroup, 1);
 	ExitThread(0);
 	return 0;
+}
+
+static BOOL pf_server_start_peer(freerdp_peer* client)
+{
+	proxyServer* server = NULL;
+
+	server = (proxyServer*)client->ContextExtra;
+	WINPR_ASSERT(server);
+
+	server->thread = CreateThread(NULL, 0, pf_server_handle_peer, client, 0, NULL);
+	if (!server->thread)
+		return FALSE;
+
+	return TRUE;
 }
 
 static BOOL pf_server_peer_accepted(freerdp_listener* listener, freerdp_peer* client)
@@ -543,6 +604,10 @@ proxyServer* pf_server_new(proxyConfig* config)
 	if (!server->stopEvent)
 		goto out;
 
+	server->start_recording_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (!server->start_recording_event)
+		goto out;
+
 	server->clients = ArrayList_New(TRUE);
 	if (!server->clients)
 		goto out;
@@ -598,8 +663,101 @@ void pf_server_free(proxyServer* server)
 	if (server->stopEvent)
 		CloseHandle(server->stopEvent);
 
+	if (server->start_recording_event)
+		CloseHandle(server->start_recording_event);
+
 	if (server->thread)
 		CloseHandle(server->thread);
 
 	free(server);
+}
+
+void pf_server_print_plugins_info() {
+	pf_modules_print_plugins_info();
+}
+
+BOOL pf_server_start_with_peer_socket(proxyServer* server, int peer_fd)
+{
+	struct sockaddr_storage peer_addr;
+	socklen_t len = sizeof(peer_addr);
+	freerdp_peer* client = NULL;
+
+	WINPR_ASSERT(server);
+
+	if (WaitForSingleObject(server->stopEvent, 0) == WAIT_OBJECT_0) {
+		WLog_ERR(TAG, "WaitForSingleObject(server->stopEvent, 0) failed");
+		goto fail;
+	}
+
+	if (!pf_modules_init("/home/guacd/modules", (const char**)server->config->Modules,
+	                     server->config->ModulesCount))
+	{
+		WLog_ERR(TAG, "failed to initialize proxy modules!");
+		goto fail;
+	}
+	pf_modules_print_plugins_info();
+
+	WSADATA wsaData;
+	WTSRegisterWtsApiFunctionTable(FreeRDP_InitWtsApi());
+	winpr_InitializeSSL(WINPR_SSL_INIT_DEFAULT);
+
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+		WLog_ERR(TAG, "WSAStartup failed");
+		goto fail;
+	}
+
+	client = freerdp_peer_new(peer_fd);
+	if (!client) {
+		WLog_ERR(TAG, "freerdp_peer_new failed");
+		goto fail;
+	}
+
+	int ret = getpeername(peer_fd, (struct sockaddr*)&peer_addr, &len);
+	if (ret != 0) {
+		WLog_ERR(TAG, "getpeername: %d", ret);
+		goto fail;
+	}
+
+	void* sin_addr;
+	sin_addr = NULL;
+	static const BYTE localhost6_bytes[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+
+	if (peer_addr.ss_family == AF_INET)
+	{
+		sin_addr = &(((struct sockaddr_in*)&peer_addr)->sin_addr);
+
+		if ((*(UINT32*)sin_addr) == 0x0100007f)
+			client->local = TRUE;
+	}
+	else if (peer_addr.ss_family == AF_INET6)
+	{
+		sin_addr = &(((struct sockaddr_in6*)&peer_addr)->sin6_addr);
+
+		if (memcmp(sin_addr, localhost6_bytes, 16) == 0)
+			client->local = TRUE;
+	}
+
+#ifndef _WIN32
+	else if (peer_addr.ss_family == AF_UNIX)
+		client->local = TRUE;
+#endif
+	// client->local = TRUE;
+
+	if (sin_addr)
+		inet_ntop(peer_addr.ss_family, sin_addr, client->hostname, sizeof(client->hostname));
+
+
+	client->ContextExtra = server;
+
+	if (!pf_server_start_peer(client)) {
+		WLog_ERR(TAG, "pf_server_start_peer failed");
+		goto fail;
+	}
+
+	return TRUE;
+
+fail:
+	WLog_ERR(TAG, "PeerAccepted callback failed");
+	freerdp_peer_free(client);
+	return FALSE;
 }

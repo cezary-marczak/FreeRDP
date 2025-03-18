@@ -26,9 +26,9 @@
 #include <freerdp/gdi/gdi.h>
 #include <freerdp/gdi/bitmap.h>
 
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 void pf_server_register_update_callbacks(rdpUpdate* update);
-void pf_client_register_update_callbacks(rdpUpdate* update);
+void pf_client_register_update_callbacks(rdpUpdate* update, rdpUpdate* additional_update);
 
 #endif /* FREERDP_SERVER_PROXY_PFUPDATE_H */

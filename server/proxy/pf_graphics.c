@@ -30,7 +30,7 @@
 #include "pf_graphics.h"
 #include "pf_log.h"
 #include "pf_gdi.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 #include <freerdp/gdi/dc.h>
 #include <freerdp/gdi/shape.h>
@@ -53,6 +53,7 @@ static void pf_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 
 static BOOL pf_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 {
+	WLog_INFO(TAG, "pf_Bitmap_Paint - not gdi");
 	return TRUE;
 }
 
@@ -64,25 +65,47 @@ static BOOL pf_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, BOOL pr
 /* Pointer Class */
 static BOOL pf_Pointer_New(rdpContext* context, rdpPointer* pointer)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->pointer && pc->pointer->New)
+		if (pc->pointer->New(context, pointer) == FALSE)
+			WLog_INFO(TAG, "pc->pointer->New failed");
 	return TRUE;
 }
 
 static void pf_Pointer_Free(rdpContext* context, rdpPointer* pointer)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->pointer && pc->pointer->Free)
+		pc->pointer->Free(context, pointer);
 }
 
 static BOOL pf_Pointer_Set(rdpContext* context, const rdpPointer* pointer)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->pointer && pc->pointer->Set)
+		if (pc->pointer->Set(context, pointer) == FALSE)
+			WLog_INFO(TAG, "pc->pointer->Set failed");
+
 	return TRUE;
 }
 
 static BOOL pf_Pointer_SetNull(rdpContext* context)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->pointer && pc->pointer->SetNull)
+		if (pc->pointer->SetNull(context) == FALSE)
+			WLog_INFO(TAG, "pc->pointer->SetNull failed");
+
 	return TRUE;
 }
 
 static BOOL pf_Pointer_SetDefault(rdpContext* context)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->pointer && pc->pointer->SetDefault)
+		if (pc->pointer->SetDefault(context) == FALSE)
+			WLog_INFO(TAG, "pc->pointer->SetDefault failed");
+
 	return TRUE;
 }
 
@@ -122,20 +145,16 @@ static BOOL pf_Glyph_EndDraw(rdpContext* context, INT32 x, INT32 y, INT32 width,
 /* Graphics Module */
 BOOL pf_register_pointer(rdpGraphics* graphics)
 {
-	rdpPointer* pointer = NULL;
-
-	if (!(pointer = (rdpPointer*)calloc(1, sizeof(rdpPointer))))
-		return FALSE;
-
-	pointer->size = sizeof(rdpPointer);
-	pointer->New = pf_Pointer_New;
-	pointer->Free = pf_Pointer_Free;
-	pointer->Set = pf_Pointer_Set;
-	pointer->SetNull = pf_Pointer_SetNull;
-	pointer->SetDefault = pf_Pointer_SetDefault;
-	pointer->SetPosition = pf_Pointer_SetPosition;
-	graphics_register_pointer(graphics, pointer);
-	free(pointer);
+	pClientContext* pc = graphics->context;
+	rdpPointer pointer = *graphics->Pointer_Prototype;
+	pointer.size = sizeof(rdpPointer);
+	pointer.New = pc->pointer->New;
+	pointer.Free = pc->pointer->Free;
+	pointer.Set = pc->pointer->Set;
+	pointer.SetNull = pc->pointer->SetNull;
+	pointer.SetDefault = pc->pointer->SetDefault;
+	pointer.SetPosition = pc->pointer->SetPosition;
+	graphics_register_pointer(graphics, &pointer);
 	return TRUE;
 }
 

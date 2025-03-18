@@ -29,7 +29,7 @@
 
 #include "pf_log.h"
 #include "modules_api.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 #include "cap_config.h"
 #include "cap_protocol.h"
 

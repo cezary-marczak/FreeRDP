@@ -32,6 +32,7 @@
 #include <freerdp/freerdp.h>
 #include "pf_gdi.h"
 #include "pf_log.h"
+#include <freerdp/server/pf_context.h>
 
 #include <freerdp/log.h>
 #define TAG PROXY_TAG("gdi")
@@ -126,18 +127,10 @@ static BOOL pf_gdi_surface_bits(rdpContext* context, const SURFACE_BITS_COMMAND*
 void pf_gdi_register_update_callbacks(rdpUpdate* update)
 {
 	rdpPrimaryUpdate* primary = update->primary;
-	update->SetBounds = pf_gdi_set_bounds;
-	primary->DstBlt = pf_gdi_dstblt;
-	primary->PatBlt = pf_gdi_patblt;
-	primary->ScrBlt = pf_gdi_scrblt;
-	primary->OpaqueRect = pf_gdi_opaque_rect;
 	primary->MultiOpaqueRect = pf_gdi_multi_opaque_rect;
 	primary->LineTo = pf_gdi_line_to;
 	primary->Polyline = pf_gdi_polyline;
-	primary->MemBlt = pf_gdi_memblt;
 	primary->Mem3Blt = pf_gdi_mem3blt;
 	primary->PolygonSC = pf_gdi_polygon_sc;
 	primary->PolygonCB = pf_gdi_polygon_cb;
-	update->SurfaceBits = pf_gdi_surface_bits;
-	update->SurfaceFrameMarker = pf_gdi_surface_frame_marker;
 }

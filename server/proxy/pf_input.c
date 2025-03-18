@@ -20,7 +20,7 @@
  */
 
 #include "pf_input.h"
-#include "pf_context.h"
+#include <freerdp/server/pf_context.h>
 #include "pf_modules.h"
 
 static BOOL pf_server_check_and_sync_input_state(pClientContext* pc)
@@ -93,6 +93,13 @@ static BOOL pf_server_mouse_event(rdpInput* input, UINT16 flags, UINT16 x, UINT1
 
 	if (!pf_server_check_and_sync_input_state(pc))
 		return TRUE;
+
+	const rdpPointer* pointer = pc->pointer;
+	if (pointer != NULL) {
+		if (IFCALLRESULT(FALSE, pointer->SetPosition, (rdpContext*)pc, x, y) == FALSE) {
+			printf("%s(%d) SetPosition failed!\n", __FUNCTION__, __LINE__);
+		}
+	}
 
 	if (!config->Mouse)
 		return TRUE;

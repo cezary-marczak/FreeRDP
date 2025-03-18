@@ -2277,6 +2277,8 @@ DWORD tsg_get_event_handles(rdpTsg* tsg, HANDLE* events, DWORD count)
 	if (events && (nCount < count))
 	{
 		events[nCount] = rpc->client->PipeEvent;
+		WLog_VRB(TAG, "%d EVENT HANDLER: pipeevent", nCount+1);
+
 		nCount++;
 	}
 	else
@@ -2287,6 +2289,8 @@ DWORD tsg_get_event_handles(rdpTsg* tsg, HANDLE* events, DWORD count)
 		if (events && (nCount < count))
 		{
 			BIO_get_event(connection->DefaultInChannel->common.tls->bio, &events[nCount]);
+			WLog_VRB(TAG, "%d EVENT HANDLER: DefaultInChannel->common.tls->bio", nCount+1);
+
 			nCount++;
 		}
 		else
@@ -2298,6 +2302,8 @@ DWORD tsg_get_event_handles(rdpTsg* tsg, HANDLE* events, DWORD count)
 		if (events && (nCount < count))
 		{
 			BIO_get_event(connection->NonDefaultInChannel->common.tls->bio, &events[nCount]);
+			WLog_VRB(TAG, "%d EVENT HANDLER: NonDefaultInChannel->common.tls->bio", nCount+1);
+
 			nCount++;
 		}
 		else
@@ -2309,6 +2315,8 @@ DWORD tsg_get_event_handles(rdpTsg* tsg, HANDLE* events, DWORD count)
 		if (events && (nCount < count))
 		{
 			BIO_get_event(connection->DefaultOutChannel->common.tls->bio, &events[nCount]);
+			WLog_VRB(TAG, "%d EVENT HANDLER: DefaultOutChannel->common.tls->bio", nCount+1);
+
 			nCount++;
 		}
 		else
@@ -2320,6 +2328,7 @@ DWORD tsg_get_event_handles(rdpTsg* tsg, HANDLE* events, DWORD count)
 		if (events && (nCount < count))
 		{
 			BIO_get_event(connection->NonDefaultOutChannel->common.tls->bio, &events[nCount]);
+			WLog_VRB(TAG, "%d EVENT HANDLER: NonDefaultOutChannel->common.tls->bio", nCount+1);
 			nCount++;
 		}
 		else
