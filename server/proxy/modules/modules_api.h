@@ -24,7 +24,7 @@
 #include <freerdp/freerdp.h>
 #include <winpr/winpr.h>
 
-#include "../pf_context.h"
+#include <freerdp/server/pf_context.h>
 
 #define MODULE_TAG(module) "proxy.modules." module
 

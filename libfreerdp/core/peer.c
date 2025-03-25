@@ -225,6 +225,21 @@ static BOOL freerdp_peer_initialize(freerdp_peer* client)
 		}
 	}
 
+
+	// settings->BitmapCacheEnabled = 1;
+	// settings->OffscreenSupportLevel = 1;
+	// settings->GlyphSupportLevel = GLYPH_SUPPORT_NONE;
+
+	/* Claim support only for specific updates, independent of FreeRDP defaults */
+//	ZeroMemory(rdp_settings->OrderSupport, GUAC_RDP_ORDER_SUPPORT_LENGTH);
+//	rdp_settings->OrderSupport[NEG_DSTBLT_INDEX] = TRUE;
+//	rdp_settings->OrderSupport[NEG_SCRBLT_INDEX] = TRUE;
+//	rdp_settings->OrderSupport[NEG_MEMBLT_INDEX] = !guac_settings->disable_bitmap_caching;
+//	rdp_settings->OrderSupport[NEG_MEMBLT_V2_INDEX] = !guac_settings->disable_bitmap_caching;
+//	rdp_settings->OrderSupport[NEG_GLYPH_INDEX_INDEX] = !guac_settings->disable_glyph_caching;
+//	rdp_settings->OrderSupport[NEG_FAST_INDEX_INDEX] = !guac_settings->disable_glyph_caching;
+//	rdp_settings->OrderSupport[NEG_FAST_GLYPH_INDEX] = !guac_settings->disable_glyph_caching;
+
 	return TRUE;
 }
 
@@ -359,19 +374,23 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	}
 
 	rdp->inPackets++;
-	if (freerdp_shall_disconnect(rdp->instance))
+	if (freerdp_shall_disconnect(rdp->instance)) {
+		WLog_ERR(TAG, "shall disconnect");
 		return 0;
+	}
 
 	if (rdp->settings->UseRdpSecurityLayer)
 	{
-		if (!rdp_read_security_header(s, &securityFlags, &length))
+		if (!rdp_read_security_header(s, &securityFlags, &length)) {
+			// WLog_ERR(TAG, "rdp_read_security_header");
 			return -1;
+		}
 
 		if (securityFlags & SEC_ENCRYPT)
 		{
 			if (!rdp_decrypt(rdp, s, &length, securityFlags))
 			{
-				WLog_ERR(TAG, "rdp_decrypt failed");
+				// WLog_ERR(TAG, "rdp_decrypt failed");
 				return -1;
 			}
 		}
@@ -380,50 +399,68 @@ static int peer_recv_tpkt_pdu(freerdp_peer* client, wStream* s)
 	if (channelId == MCS_GLOBAL_CHANNEL_ID)
 	{
 		UINT16 pduLength, remain;
-		if (!rdp_read_share_control_header(s, &pduLength, &remain, &pduType, &pduSource))
+		if (!rdp_read_share_control_header(s, &pduLength, &remain, &pduType, &pduSource)) {
+			// WLog_ERR(TAG, "rdp_read_share_control_header");
+
 			return -1;
+		}
 
 		client->settings->PduSource = pduSource;
 
-		WLog_DBG(TAG, "Received %s", pdu_type_to_str(pduType));
+		// WLog_DBG(TAG, "Received %s", pdu_type_to_str(pduType));
 		switch (pduType)
 		{
 			case PDU_TYPE_DATA:
-				if (!peer_recv_data_pdu(client, s, pduLength))
+				if (!peer_recv_data_pdu(client, s, pduLength)) {
+					// WLog_ERR(TAG, "peer_recv_data_pdu");
+
 					return -1;
+				}
 
 				break;
 
 			case PDU_TYPE_CONFIRM_ACTIVE:
-				if (!rdp_server_accept_confirm_active(rdp, s, pduLength))
+				if (!rdp_server_accept_confirm_active(rdp, s, pduLength)) {
+					// WLog_ERR(TAG, "rdp_server_accept_confirm_active");
+
 					return -1;
+				}
 
 				break;
 
 			case PDU_TYPE_FLOW_RESPONSE:
 			case PDU_TYPE_FLOW_STOP:
 			case PDU_TYPE_FLOW_TEST:
-				if (!Stream_SafeSeek(s, remain))
+				if (!Stream_SafeSeek(s, remain)) {
+					// WLog_ERR(TAG, "Stream_SafeSeek");
+
 					return -1;
+				}
 				break;
 
 			default:
-				WLog_ERR(TAG, "Client sent pduType %" PRIu16 "", pduType);
+				WLog_ERR(TAG, "Client sent pduType %" PRIu16 "", pduType); {}
 				return -1;
 		}
 	}
 	else if ((rdp->mcs->messageChannelId > 0) && (channelId == rdp->mcs->messageChannelId))
 	{
 		if (!rdp->settings->UseRdpSecurityLayer)
-			if (!rdp_read_security_header(s, &securityFlags, NULL))
+			if (!rdp_read_security_header(s, &securityFlags, NULL)) {
+				// WLog_ERR(TAG, "rdp_read_security_header");
+
 				return -1;
+			}
 
 		return rdp_recv_message_channel_pdu(rdp, s, securityFlags);
 	}
 	else
 	{
-		if (!freerdp_channel_peer_process(client, s, channelId))
+		if (!freerdp_channel_peer_process(client, s, channelId)) {
+			// WLog_ERR(TAG, "freerdp_channel_peer_process");
+
 			return -1;
+		}
 	}
 	if (!tpkt_ensure_stream_consumed(s, length))
 		return -1;
@@ -462,10 +499,15 @@ static int peer_recv_fastpath_pdu(freerdp_peer* client, wStream* s)
 
 static int peer_recv_pdu(freerdp_peer* client, wStream* s)
 {
-	if (tpkt_verify_header(s))
-		return peer_recv_tpkt_pdu(client, s);
-	else
-		return peer_recv_fastpath_pdu(client, s);
+	int ret;
+	if (tpkt_verify_header(s)) {
+		// WLog_ERR(TAG, "Incorrect TPKT header.");
+		ret = peer_recv_tpkt_pdu(client, s);
+	} else {
+		// WLog_ERR(TAG, "Correct TPKT header.");
+		ret =  peer_recv_fastpath_pdu(client, s);
+	}
+	return ret;
 }
 
 static int peer_recv_callback(rdpTransport* transport, wStream* s, void* extra)
@@ -1011,6 +1053,8 @@ static LicenseCallbackResult freerdp_peer_nolicense(freerdp_peer* peer, wStream*
 
 	return LICENSE_CB_COMPLETED;
 }
+
+// char PEER_DEB[] = "PEER";
 
 BOOL freerdp_peer_context_new(freerdp_peer* client)
 {

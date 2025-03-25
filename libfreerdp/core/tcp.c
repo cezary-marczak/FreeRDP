@@ -106,6 +106,36 @@ static long transport_bio_simple_callback(BIO* bio, int mode, const char* argp, 
 	return 1;
 }
 
+static void string_hexdump(const BYTE* data, size_t length)
+{
+	const BYTE* p = data;
+	size_t i, line, offset = 0;
+
+	while (offset < length)
+	{
+		printf("%04" PRIxz " ", offset);
+
+		line = length - offset;
+
+		if (line > 16)
+			line = 16;
+
+		for (i = 0; i < line; i++)
+			printf("%02" PRIx8 " ", p[i]);
+
+		for (; i < 16; i++)
+			printf("   ");
+
+		for (i = 0; i < line; i++)
+			printf("%c", (p[i] >= 0x20 && p[i] < 0x7F) ? (char)p[i] : '.');
+
+		printf("\n");
+
+		offset += line;
+		p += line;
+	}
+}
+
 static int transport_bio_simple_write(BIO* bio, const char* buf, int size)
 {
 	int error;
@@ -121,6 +151,7 @@ static int transport_bio_simple_write(BIO* bio, const char* buf, int size)
 	if (status <= 0)
 	{
 		error = WSAGetLastError();
+		// WLog_VRB(TAG, "wsa last error: %d", error);
 
 		if ((error == WSAEWOULDBLOCK) || (error == WSAEINTR) || (error == WSAEINPROGRESS) ||
 		    (error == WSAEALREADY))
@@ -133,6 +164,7 @@ static int transport_bio_simple_write(BIO* bio, const char* buf, int size)
 		}
 	}
 
+//	string_hexdump((BYTE*)buf, status);
 	return status;
 }
 
@@ -151,8 +183,11 @@ static int transport_bio_simple_read(BIO* bio, char* buf, int size)
 
 	if (status > 0)
 	{
+//		string_hexdump((BYTE*)buf, status);
 		return status;
 	}
+
+	// WLog_VRB(TAG, "READ STATUS: %d, errno: %d", status, errno);
 
 	if (status == 0)
 	{
@@ -161,6 +196,8 @@ static int transport_bio_simple_read(BIO* bio, char* buf, int size)
 	}
 
 	error = WSAGetLastError();
+
+	// WLog_VRB(TAG, "wsa last error: 0x%08x   last status: %d", error, status);
 
 	if ((error == WSAEWOULDBLOCK) || (error == WSAEINTR) || (error == WSAEINPROGRESS) ||
 	    (error == WSAEALREADY))
@@ -775,11 +812,19 @@ struct addrinfo* freerdp_tcp_resolve_host(const char* hostname, int port, int ai
 		sprintf_s(port_str, sizeof(port_str) - 1, "%d", port);
 		service = port_str;
 	}
+	// WLog_INFO(TAG, "freerdp_tcp_resolve_host: host: %s, port: %d, ai_flags: 0x%08x, service: %s", hostname, port,
+	// 	ai_flags, service);
+
 
 	status = getaddrinfo(hostname, service, &hints, &result);
 
-	if (status)
+	if (status) {
+		// WLog_ERR(TAG, "getaddrinfo: %d", status);
 		return NULL;
+	}
+
+	// WLog_INFO(TAG, "freerdp_tcp_resolve_host: result.ai_family: %s, ai_socktype: %d, ai_protocol: %d",
+	// 	result->ai_family, result->ai_socktype, result->ai_protocol);
 
 	return result;
 }
@@ -824,11 +869,16 @@ static BOOL freerdp_tcp_connect_timeout(rdpContext* context, int sockfd, struct 
 	}
 
 	handles[count++] = context->abortEvent;
-	status = _connect(sockfd, addr, addrlen);
+	// char* addrd = freerdp_tcp_get_peer_address(sockfd);
+	// WLog_INFO(TAG, "freerdp_tcp_connect_timeout: %s", addrd);
+	// free(addrd);
 
+	status = _connect(sockfd, addr, addrlen);
 	if (status < 0)
 	{
+		// WLog_ERR(TAG, "_connect failed with %d, errno: %d", status, errno);
 		status = WSAGetLastError();
+		//WLog_ERR(TAG, "_connect last error 0x%08X", status);
 
 		switch (status)
 		{
@@ -840,11 +890,14 @@ static BOOL freerdp_tcp_connect_timeout(rdpContext* context, int sockfd, struct 
 				goto fail;
 		}
 	}
+	//WLog_VRB(TAG, "freerdp_tcp_connect_timeout success!!!");
 
 	status = WaitForMultipleObjects(count, handles, FALSE, tout);
 
-	if (WAIT_OBJECT_0 != status)
+	if (WAIT_OBJECT_0 != status) {
+		//WLog_ERR(TAG, "WaitForMultipleObjects failed with %d", status);
 		goto fail;
+	}
 
 	status = recv(sockfd, NULL, 0, 0);
 
@@ -1139,6 +1192,7 @@ int freerdp_tcp_connect(rdpContext* context, rdpSettings* settings, const char* 
 			}
 
 			sockfd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+			//WLog_VRB(TAG, "freerdp_tcp_connect: socket: %d", sockfd);
 
 			if (sockfd < 0)
 			{
@@ -1151,7 +1205,8 @@ int freerdp_tcp_connect(rdpContext* context, rdpSettings* settings, const char* 
 			if ((peerAddress = freerdp_tcp_address_to_string(
 			         (const struct sockaddr_storage*)addr->ai_addr, NULL)) != NULL)
 			{
-				WLog_DBG(TAG, "connecting to peer %s", peerAddress);
+				// WLog_DBG(TAG, "connecting to peer %s, ai_family: %d, ai_socktype: %d, ai_protocol: %d", peerAddress,
+				// 	addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 				free(peerAddress);
 			}
 

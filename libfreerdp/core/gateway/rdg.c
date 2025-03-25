@@ -1543,6 +1543,7 @@ DWORD rdg_get_event_handles(rdpRdg* rdg, HANDLE* events, DWORD count)
 		if (events && (nCount < count))
 		{
 			BIO_get_event(rdg->tlsOut->bio, &events[nCount]);
+			WLog_VRB(TAG, "%d EVENT HANDLER: tlsout", nCount+1);
 			nCount++;
 		}
 		else
@@ -1554,6 +1555,8 @@ DWORD rdg_get_event_handles(rdpRdg* rdg, HANDLE* events, DWORD count)
 		if (events && (nCount < count))
 		{
 			BIO_get_event(rdg->tlsIn->bio, &events[nCount]);
+			WLog_VRB(TAG, "%d EVENT HANDLER: tlsin", nCount+1);
+
 			nCount++;
 		}
 		else

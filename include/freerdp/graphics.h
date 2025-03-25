@@ -70,6 +70,16 @@ extern "C"
 		BOOL compressed;          /* 32 */
 		BOOL ephemeral;           /* 33 */
 		UINT32 paddingC[64 - 34]; /* 34 */
+
+		/**
+     * Layer containing cached image data.
+		 */
+		void* layer;
+
+		/**
+     * The number of times a bitmap has been used.
+		 */
+		int used;
 	};
 
 	FREERDP_API rdpBitmap* Bitmap_Alloc(rdpContext* context);
@@ -107,6 +117,11 @@ extern "C"
 		BYTE* xorMaskData;        /* 23 */
 		BYTE* andMaskData;        /* 24 */
 		UINT32 paddingB[32 - 25]; /* 25 */
+
+		/**
+     * The display layer containing cached image data.
+		 */
+		void* layer;
 	};
 
 	FREERDP_API rdpPointer* Pointer_Alloc(rdpContext* context);
@@ -142,6 +157,11 @@ extern "C"
 		UINT32 cb;                /* 20 */
 		BYTE* aj;                 /* 21 */
 		UINT32 paddingB[32 - 22]; /* 22 */
+
+		/**
+     * Cairo surface layer containing cached image data.
+		 */
+		void* surface;
 	};
 
 	FREERDP_API rdpGlyph* Glyph_Alloc(rdpContext* context, INT32 x, INT32 y, UINT32 cx, UINT32 cy,
@@ -156,6 +176,12 @@ extern "C"
 		rdpPointer* Pointer_Prototype; /* 2 */
 		rdpGlyph* Glyph_Prototype;     /* 3 */
 		UINT32 paddingA[16 - 4];       /* 4 */
+
+
+		/**
+     * Cairo surface layer containing cached image data.
+		 */
+		void* surface;
 	};
 
 	FREERDP_API void graphics_register_bitmap(rdpGraphics* graphics, rdpBitmap* bitmap);

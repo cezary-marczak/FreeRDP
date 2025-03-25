@@ -806,6 +806,8 @@ static BOOL fastpath_recv_input_event(rdpFastPath* fastpath, wStream* s)
 	if (!fastpath_read_input_event_header(s, &eventFlags, &eventCode))
 		return FALSE;
 
+	WLog_VRB(TAG, "input eventFlags: eventCode: 0x%02" PRIX8 ", evFlags 0x%02" PRIX8, eventCode, eventFlags);
+
 	switch (eventCode)
 	{
 		case FASTPATH_INPUT_EVENT_SCANCODE:

@@ -35,6 +35,7 @@
 #include "drawing.h"
 #include "brush.h"
 #include "graphics.h"
+#include <freerdp/server/pf_context.h>
 
 #define TAG FREERDP_TAG("gdi")
 /* Bitmap Class */
@@ -73,6 +74,8 @@ HGDI_BITMAP gdi_create_bitmap(rdpGdi* gdi, UINT32 nWidth, UINT32 nHeight, UINT32
 
 static BOOL gdi_Bitmap_New(rdpContext* context, rdpBitmap* bitmap)
 {
+//	WLog_INFO(TAG, "DOBRE GDI");
+
 	gdiBitmap* gdi_bitmap;
 	rdpGdi* gdi = context->gdi;
 	gdi_bitmap = (gdiBitmap*)bitmap;
@@ -100,11 +103,21 @@ static BOOL gdi_Bitmap_New(rdpContext* context, rdpBitmap* bitmap)
 	gdi_bitmap->hdc->format = gdi_bitmap->bitmap->format;
 	gdi_SelectObject(gdi_bitmap->hdc, (HGDIOBJECT)gdi_bitmap->bitmap);
 	gdi_bitmap->org_bitmap = NULL;
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->bitmap && pc->bitmap->New)
+		if (pc->bitmap->New(context, bitmap) == FALSE)
+			WLog_INFO(TAG, "pc->bitmap->New failed");
+
 	return TRUE;
 }
 
 static void gdi_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->bitmap && pc->bitmap->Free)
+		pc->bitmap->Free(context, bitmap);
+
 	gdiBitmap* gdi_bitmap = (gdiBitmap*)bitmap;
 
 	if (gdi_bitmap)
@@ -122,11 +135,22 @@ static void gdi_Bitmap_Free(rdpContext* context, rdpBitmap* bitmap)
 
 static BOOL gdi_Bitmap_Paint(rdpContext* context, rdpBitmap* bitmap)
 {
+//	WLog_INFO(TAG, "gdi_Bitmap_Paint - DOBRE GDI");
 	gdiBitmap* gdi_bitmap = (gdiBitmap*)bitmap;
 	UINT32 width = bitmap->right - bitmap->left + 1;
 	UINT32 height = bitmap->bottom - bitmap->top + 1;
-	return gdi_BitBlt(context->gdi->primary->hdc, bitmap->left, bitmap->top, width, height,
+	BOOL ret = gdi_BitBlt(context->gdi->primary->hdc, bitmap->left, bitmap->top, width, height,
 	                  gdi_bitmap->hdc, 0, 0, GDI_SRCCOPY, &context->gdi->palette);
+
+	// WLog_INFO(TAG, "about to run callback");
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->bitmap && pc->bitmap->Paint)
+	{
+		if (pc->bitmap->Paint(context, bitmap) == FALSE)
+			WLog_INFO(TAG, "pc->bitmap->Paint failed");
+	}
+	return ret;
 }
 
 static BOOL gdi_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap, const BYTE* pSrcData,
@@ -196,6 +220,8 @@ static BOOL gdi_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap, const 
 
 static BOOL gdi_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, BOOL primary)
 {
+//	WLog_INFO(TAG, "gdi_Bitmap_SetSurface - DOBRE GDI");
+
 	rdpGdi* gdi;
 
 	if (!context)
@@ -211,12 +237,19 @@ static BOOL gdi_Bitmap_SetSurface(rdpContext* context, rdpBitmap* bitmap, BOOL p
 	else
 		gdi->drawing = (gdiBitmap*)bitmap;
 
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->bitmap && pc->bitmap->SetSurface)
+		if (pc->bitmap->SetSurface(context, bitmap, primary) == FALSE)
+			WLog_INFO(TAG, "pc->bitmap->SetSurface failed");
+
 	return TRUE;
 }
 
 /* Glyph Class */
 static BOOL gdi_Glyph_New(rdpContext* context, const rdpGlyph* glyph)
 {
+//	WLog_INFO(TAG, "gdi_Glyph_New - DOBRE GDI");
+
 	BYTE* data;
 	gdiGlyph* gdi_glyph;
 
@@ -249,11 +282,21 @@ static BOOL gdi_Glyph_New(rdpContext* context, const rdpGlyph* glyph)
 
 	gdi_SelectObject(gdi_glyph->hdc, (HGDIOBJECT)gdi_glyph->bitmap);
 	gdi_glyph->org_bitmap = NULL;
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->glyph && pc->glyph->New)
+		if (pc->glyph->New(context, glyph) == FALSE)
+			WLog_INFO(TAG, "pc->glyph->New failed");
+
 	return TRUE;
 }
 
 static void gdi_Glyph_Free(rdpContext* context, rdpGlyph* glyph)
 {
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->glyph && pc->glyph->Free)
+		pc->glyph->Free(context, glyph);
+
 	gdiGlyph* gdi_glyph;
 	gdi_glyph = (gdiGlyph*)glyph;
 
@@ -270,6 +313,8 @@ static void gdi_Glyph_Free(rdpContext* context, rdpGlyph* glyph)
 static BOOL gdi_Glyph_Draw(rdpContext* context, const rdpGlyph* glyph, INT32 x, INT32 y, INT32 w,
                            INT32 h, INT32 sx, INT32 sy, BOOL fOpRedundant)
 {
+//	WLog_INFO(TAG, "gdi_Glyph_Draw - DOBRE GDI");
+
 	gdiGlyph* gdi_glyph;
 	rdpGdi* gdi;
 	HGDI_BRUSH brush;
@@ -318,6 +363,12 @@ static BOOL gdi_Glyph_Draw(rdpContext* context, const rdpGlyph* glyph, INT32 x, 
 	rc = gdi_BitBlt(gdi->drawing->hdc, x, y, w, h, gdi_glyph->hdc, sx, sy, GDI_GLYPH_ORDER,
 	                &context->gdi->palette);
 	gdi_DeleteObject((HGDIOBJECT)brush);
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->glyph && pc->glyph->Draw)
+		if (pc->glyph->Draw(context, glyph, x, y, w, h, sx, sy, fOpRedundant) == FALSE)
+			WLog_INFO(TAG, "pc->glyph->Draw failed");
+
 	return rc;
 }
 
@@ -339,6 +390,8 @@ static BOOL gdi_Glyph_SetBounds(rdpContext* context, INT32 x, INT32 y, INT32 wid
 static BOOL gdi_Glyph_BeginDraw(rdpContext* context, INT32 x, INT32 y, INT32 width, INT32 height,
                                 UINT32 bgcolor, UINT32 fgcolor, BOOL fOpRedundant)
 {
+//	WLog_INFO(TAG, "gdi_Glyph_BeginDraw - DOBRE GDI");
+
 	rdpGdi* gdi;
 
 	if (!context || !context->gdi)
@@ -384,8 +437,18 @@ static BOOL gdi_Glyph_BeginDraw(rdpContext* context, INT32 x, INT32 y, INT32 wid
 			gdi_DeleteObject((HGDIOBJECT)brush);
 		}
 
+		pClientContext* pc = (pClientContext*)context;
+		if (pc->glyph && pc->glyph->BeginDraw)
+			if (pc->glyph->BeginDraw(context, x, y, width, height, bgcolor, fgcolor, fOpRedundant) == FALSE)
+				WLog_INFO(TAG, "pc->glyph->BeginDraw failed");
+
 		return gdi_SetNullClipRgn(gdi->drawing->hdc);
 	}
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->glyph && pc->glyph->BeginDraw)
+		if (pc->glyph->BeginDraw(context, x, y, width, height, bgcolor, fgcolor, fOpRedundant) == FALSE)
+			WLog_INFO(TAG, "pc->glyph->BeginDraw failed");
 
 	return TRUE;
 }
@@ -393,6 +456,8 @@ static BOOL gdi_Glyph_BeginDraw(rdpContext* context, INT32 x, INT32 y, INT32 wid
 static BOOL gdi_Glyph_EndDraw(rdpContext* context, INT32 x, INT32 y, INT32 width, INT32 height,
                               UINT32 bgcolor, UINT32 fgcolor)
 {
+//	WLog_INFO(TAG, "DOBRE GDI");
+
 	rdpGdi* gdi;
 
 	if (!context || !context->gdi)
@@ -404,6 +469,12 @@ static BOOL gdi_Glyph_EndDraw(rdpContext* context, INT32 x, INT32 y, INT32 width
 		return FALSE;
 
 	gdi_SetNullClipRgn(gdi->drawing->hdc);
+
+	pClientContext* pc = (pClientContext*)context;
+	if (pc->glyph && pc->glyph->EndDraw)
+		if (pc->glyph->EndDraw(context, x, y, width, height, bgcolor, fgcolor) == FALSE)
+			WLog_INFO(TAG, "pc->glyph->EndDraw failed");
+
 	return TRUE;
 }
 

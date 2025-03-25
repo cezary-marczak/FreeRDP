@@ -29,6 +29,8 @@
 
 #include <freerdp/log.h>
 #include <freerdp/cache/pointer.h>
+#include <freerdp/server/pf_context.h>
+
 
 #include "pointer.h"
 
@@ -274,6 +276,128 @@ BOOL pointer_cache_put(rdpPointerCache* pointer_cache, UINT32 index, rdpPointer*
 	pointer_free(pointer_cache->update->context, prevPointer);
 	pointer_cache->entries[index] = pointer;
 	return TRUE;
+}
+
+static BOOL pf_client_send_pointer_system(rdpContext* context,
+                                          const POINTER_SYSTEM_UPDATE* pointer_system)
+{
+	WLog_VRB(TAG, __FUNCTION__);
+
+	BOOL ret = update_pointer_system(context, pointer_system);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "update_pointer_system failed");
+		return FALSE;
+	}
+
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	return ps->update->pointer->PointerSystem(ps, pointer_system);
+
+	// if (pc->additional_update && pc->additional_update->secondary && pc->additional_update->secondary->CacheBitmapV2)
+	// 	if (pc->additional_update->secondary->CacheBitmapV2(context, cacheBitmapV2) == FALSE)
+	// 		WLog_ERR(TAG, "additional update secondary->CacheBitmapV2 failed!");
+}
+
+static BOOL pf_client_send_pointer_position(rdpContext* context,
+                                            const POINTER_POSITION_UPDATE* pointerPosition)
+{
+	WLog_VRB(TAG, __FUNCTION__);
+
+	BOOL ret = update_pointer_position(context, pointerPosition);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "update_pointer_position failed");
+		return FALSE;
+	}
+
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	return ps->update->pointer->PointerPosition(ps, pointerPosition);
+}
+
+static BOOL pf_client_send_pointer_color(rdpContext* context,
+                                         const POINTER_COLOR_UPDATE* pointer_color)
+{
+	WLog_VRB(TAG, __FUNCTION__);
+
+	BOOL ret = update_pointer_color(context, pointer_color);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "update_pointer_color failed");
+		return FALSE;
+	}
+
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	return ps->update->pointer->PointerColor(ps, pointer_color);
+}
+
+static BOOL pf_client_send_pointer_large(rdpContext* context,
+                                         const POINTER_LARGE_UPDATE* pointer_large)
+{
+	WLog_VRB(TAG, __FUNCTION__);
+
+	BOOL ret = update_pointer_large(context, pointer_large);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "update_pointer_large failed");
+		return FALSE;
+	}
+
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	return ps->update->pointer->PointerLarge(ps, pointer_large);
+}
+
+static BOOL pf_client_send_pointer_new(rdpContext* context, const POINTER_NEW_UPDATE* pointer_new)
+{
+	WLog_VRB(TAG, __FUNCTION__);
+
+	BOOL ret = update_pointer_new(context, pointer_new);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "update_pointer_new failed");
+		return FALSE;
+	}
+
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	return ps->update->pointer->PointerNew(ps, pointer_new);
+}
+
+static BOOL pf_client_send_pointer_cached(rdpContext* context,
+                                          const POINTER_CACHED_UPDATE* pointer_cached)
+{
+	WLog_VRB(TAG, __FUNCTION__);
+
+	BOOL ret = update_pointer_cached(context, pointer_cached);
+	if (!ret)
+	{
+		WLog_ERR(TAG, "update_pointer_cached failed");
+		return FALSE;
+	}
+
+	pClientContext* pc = (pClientContext*)context;
+	proxyData* pdata = pc->pdata;
+	rdpContext* ps = (rdpContext*)pdata->ps;
+	return ps->update->pointer->PointerCached(ps, pointer_cached);
+}
+
+
+void pointer_cache_register_callbacks_pf(rdpUpdate* update)
+{
+	update->pointer->PointerSystem = pf_client_send_pointer_system;
+	update->pointer->PointerPosition = pf_client_send_pointer_position;
+	update->pointer->PointerColor = pf_client_send_pointer_color;
+	update->pointer->PointerLarge = pf_client_send_pointer_large;
+	update->pointer->PointerNew = pf_client_send_pointer_new;
+	update->pointer->PointerCached = pf_client_send_pointer_cached;
 }
 
 void pointer_cache_register_callbacks(rdpUpdate* update)
