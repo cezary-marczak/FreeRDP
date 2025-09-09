@@ -111,10 +111,17 @@ typedef struct proxy_server
 	BOOL is_native;
 	void (*guac_flush)(void* guacamole_client);
 
+	// name of the file with the session data
+	char* auth_filename;
+
 	int (*start_recording)(const struct proxy_server* proxy_srv, const char* principal);
 	HANDLE start_recording_event;
 	const char* conn_name;
 	wArrayList* allowed_principals;
+
+	/* Session correlation fields for matching auth and data connections */
+	const char* session_token;  /* UUID token sent in init packet. Also name of the auth file */
+	//const char* session_hash;   /* SHA256(token + X224bytes) for secure correlation */
 } proxyServer;
 
 #ifdef __cplusplus

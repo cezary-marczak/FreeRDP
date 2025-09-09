@@ -79,7 +79,7 @@ add_library(${MODULE_NAME} ${${MODULE_PREFIX}_SRCS})
 
 target_include_directories(${MODULE_NAME} PRIVATE ${CJSON_INCLUDE_DIRS})
 target_compile_options(${MODULE_NAME} PRIVATE ${CJSON_CFLAGS_OTHER})
-target_link_libraries(${MODULE_NAME} PRIVATE ${CJSON_LIBRARIES})
+#target_link_libraries(${MODULE_NAME} PRIVATE ${CJSON_LIBRARIES})
 target_link_options(${MODULE_NAME} PRIVATE ${CJSON_LDFLAGS})
 
 set_target_properties(${MODULE_NAME} PROPERTIES OUTPUT_NAME ${MODULE_NAME}${FREERDP_API_VERSION})
@@ -92,7 +92,7 @@ set(${MODULE_PREFIX}_LIBS ${${MODULE_PREFIX}_LIBS} freerdp-client)
 set(${MODULE_PREFIX}_LIBS ${${MODULE_PREFIX}_LIBS} rdpgfx-client)
 set(${MODULE_PREFIX}_LIBS ${${MODULE_PREFIX}_LIBS} winpr freerdp)
 
-target_link_libraries(${MODULE_NAME} ${${MODULE_PREFIX}_LIBS})
+target_link_libraries(${MODULE_NAME} PRIVATE ${CJSON_LIBRARIES} ${${MODULE_PREFIX}_LIBS})
 
 set_target_properties(${MODULE_NAME} PROPERTIES OUTPUT_NAME ${MODULE_NAME}${FREERDP_API_VERSION})
 if (WITH_LIBRARY_VERSIONING)

@@ -391,11 +391,11 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 
 			eventCount += tmp;
 		}
-//		WLog_VRB(TAG, "%d EVENT HANDLER: ChannelEvent", eventCount);
+		WLog_VRB(TAG, "%d EVENT HANDLER: ChannelEvent", eventCount);
 		eventHandles[eventCount++] = ChannelEvent;
-//		WLog_VRB(TAG, "%d EVENT HANDLER: abortEvent", eventCount);
+		WLog_VRB(TAG, "%d EVENT HANDLER: abortEvent", eventCount);
 		eventHandles[eventCount++] = pdata->abort_event;
-//		WLog_VRB(TAG, "%d EVENT HANDLER: WTSVirtualChannelManagerGetEventHandle", eventCount);
+		WLog_VRB(TAG, "%d EVENT HANDLER: WTSVirtualChannelManagerGetEventHandle", eventCount);
 		eventHandles[eventCount++] = WTSVirtualChannelManagerGetEventHandle(ps->vcm);
 		status = WaitForMultipleObjects(eventCount, eventHandles, FALSE, INFINITE);
 
