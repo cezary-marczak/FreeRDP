@@ -420,9 +420,18 @@ static BOOL pf_client_post_connect(freerdp* instance)
 	if (!gdi_init(instance, PIXEL_FORMAT_BGRX32))
 		return FALSE;
 
-	if (!pf_register_pointer(context->graphics))
-		return FALSE;
+	if (pc->pointer) {
+		WLog_INFO(TAG, "client pointer not null: assuming recording -> setting the guacamole pointer callbacks");
 
+		if (!pf_register_pointer(context->graphics)) {
+			return FALSE;
+		}
+	} else {
+		WLog_INFO(TAG, "client pointer null: assuming no recording");
+	}
+
+	WLog_INFO(TAG, "pf_register_pointer: FINISHED");
+	sleep(1);
 	if (!settings->SoftwareGdi)
 	{
 		WLog_INFO(TAG, "NO GDI !!!!!");
@@ -442,16 +451,23 @@ static BOOL pf_client_post_connect(freerdp* instance)
 	}
 
 	pf_client_register_update_callbacks(update, pc->additional_update);
+	WLog_INFO(TAG, "czaraas: 1");
+	sleep(1);
 	pointer_cache_register_callbacks_pf(update);
+	WLog_INFO(TAG, "czaraas: 1");
 	/* virtual channels receive data hook */
 	client_receive_channel_data_original = instance->ReceiveChannelData;
+	WLog_INFO(TAG, "czaraas: 1");
 	instance->ReceiveChannelData = pf_client_receive_channel_data_hook;
+	WLog_INFO(TAG, "czaraas: 1");
 
 	/* populate channel name -> channel ids map */
 	{
+	WLog_INFO(TAG, "czaraas: 1");
 		size_t i;
 		for (i = 0; i < config->PassthroughCount; i++)
 		{
+	WLog_INFO(TAG, "czaraas: 1");
 			char* channel_name = config->Passthrough[i];
 			UINT64 channel_id = (UINT64)freerdp_channels_get_id_by_name(instance, channel_name);
 			HashTable_Add(pc->vc_ids, (void*)channel_name, (void*)channel_id);
@@ -459,6 +475,7 @@ static BOOL pf_client_post_connect(freerdp* instance)
 	}
 
 	instance->heartbeat->ServerHeartbeat = pf_client_on_server_heartbeat;
+	WLog_INFO(TAG, "czaraas: 1");
 
 	/*
 	 * after the connection fully established and settings were negotiated with target server,
@@ -548,6 +565,8 @@ static BOOL pf_client_connect_without_nla(pClientContext* pc)
 // Function to read credentials from a file
 static BOOL read_credentials_from_file(const char* input_username, const char* target_server, char* password, size_t password_len)
 {
+	(void)fprintf(stdout, "Target server: %s\n", target_server);
+
 	const char* filePath = "/etc/procyon/rdpservers.json";
 	FILE* file = fopen(filePath, "r");
 	if (!file)
@@ -598,6 +617,7 @@ static BOOL read_credentials_from_file(const char* input_username, const char* t
 	}
 
 	cJSON* server_json = cJSON_GetObjectItem(rdp_servers, target_server);
+	// cJSON* server_json = cJSON_GetObjectItem(rdp_servers, "cez-controller.procyon.com");
 	if (!server_json)
 	{
 		(void)fprintf(stderr, "Failed to get server information for %s\n", target_server);
@@ -692,13 +712,19 @@ static BOOL pf_client_connect(freerdp* instance)
 	// Decode hostname
 	size_t decoded_len = 0;
 	BYTE* decoded_hostname = NULL;
-	crypto_base64_decode(encoded_hostname, strlen(encoded_hostname), &decoded_hostname, &decoded_len);
+	crypto_base64_decode(encoded_hostname, strlen(encoded_hostname), &decoded_hostname, (int*)&decoded_len);
 	if (!decoded_hostname)
 	{
 		LOG_WARN(TAG, pc, "Failed to decode server hostname");
+		decoded_hostname = _strdup(encoded_hostname);
+		if (!decoded_hostname)
+		{
+			LOG_ERR(TAG, pc, "Failed to allocate memory for decoded hostname");
+			return FALSE;
+		}
+		decoded_len = strlen(decoded_hostname);
 	}
-	else
-	{
+
 		char* server_hostname = (char*)calloc(decoded_len + 1, sizeof(char));
 		if (!server_hostname)
 		{
@@ -729,6 +755,7 @@ static BOOL pf_client_connect(freerdp* instance)
 			LOG_ERR(TAG, pc, "Failed to read credentials from file");
 			return FALSE;
 		}
+	LOG_INFO(TAG, pc, "credentials read from file: Username: %s, Password: %s", username, password);
 
 		// Set the credentials in the settings
 		if (!freerdp_settings_set_string(settings, FreeRDP_Password, password) ||
@@ -737,7 +764,7 @@ static BOOL pf_client_connect(freerdp* instance)
 			LOG_ERR(TAG, pc, "Failed to set credentials in settings");
 			return FALSE;
 		}
-	}
+
 
 	LOG_INFO(TAG, pc, "connecting using client info: Username: %s, Domain: %s", settings->Username,
 	         settings->Domain);
@@ -793,11 +820,13 @@ static DWORD WINAPI pf_client_thread_proc(LPVOID arg)
 	if (!pf_modules_run_hook(HOOK_TYPE_CLIENT_PRE_CONNECT, pdata))
 	{
 		proxy_data_abort_connect(pdata);
+		WLog_ERR(TAG, "proxy_data_abort_connect(%p)", pdata);
 		return FALSE;
 	}
 
 	if (!pf_client_connect(instance))
 	{
+		WLog_ERR(TAG, "pf_client_connect(%p)", instance);
 		proxy_data_abort_connect(pdata);
 		return FALSE;
 	}
@@ -821,17 +850,22 @@ static DWORD WINAPI pf_client_thread_proc(LPVOID arg)
 			break;
 		}
 
-		if (freerdp_shall_disconnect(instance))
+		if (freerdp_shall_disconnect(instance)) {
+			WLog_ERR(TAG, "failed by freerdp_shall_disconnect");
 			break;
+		}
 
-		if (proxy_data_shall_disconnect(pdata))
+		if (proxy_data_shall_disconnect(pdata)) {
+			WLog_ERR(TAG, "failed by proxy_data_shall_disconnect");
+
 			break;
+		}
 
 		if (!freerdp_check_event_handles(instance->context))
 		{
 			if (freerdp_get_last_error(instance->context) == FREERDP_ERROR_SUCCESS)
 				WLog_ERR(TAG, "Failed to check FreeRDP event handles");
-
+			WLog_ERR(TAG, "failed by instance->context");
 			break;
 		}
 	}

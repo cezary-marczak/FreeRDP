@@ -143,9 +143,14 @@ static BOOL pf_Glyph_EndDraw(rdpContext* context, INT32 x, INT32 y, INT32 width,
 }
 
 /* Graphics Module */
-BOOL pf_register_pointer(rdpGraphics* graphics)
+	BOOL pf_register_pointer(rdpGraphics* graphics)
 {
-	pClientContext* pc = graphics->context;
+	WLog_INFO(TAG, "pf_register_pointer: Registering pointer for proxy graphics");
+	// int* ii = 0;
+	// WLog_ERR(TAG, "pf_register_pointer failed! %d", *ii);
+
+	// sleep(1);
+	pClientContext* pc = (pClientContext*)graphics->context;
 	rdpPointer pointer = *graphics->Pointer_Prototype;
 	pointer.size = sizeof(rdpPointer);
 	pointer.New = pc->pointer->New;

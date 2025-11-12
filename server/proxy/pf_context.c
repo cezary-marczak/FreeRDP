@@ -25,6 +25,11 @@
 #include "pf_client.h"
 #include <freerdp/server/pf_context.h>
 
+ // #include <execinfo.h>
+  #include <unistd.h>
+
+
+
 static wHashTable* create_channel_ids_map()
 {
 	wHashTable* table = HashTable_New(TRUE);
@@ -39,7 +44,27 @@ static wHashTable* create_channel_ids_map()
 }
 
 #define TAG FREERDP_TAG("core.contexxt")
+void proxy_data_abort_connect(proxyData* pdata)
+{
+	WLog_INFO(TAG, "======== proxy_data_abort_connect called ========");
 
+#ifdef HAVE_EXECINFO_H
+	void* callstack[50];
+	int frames = backtrace(callstack, 50);
+
+	WLog_INFO(TAG, "Call stack has %d frames:", frames);
+
+	// Write directly to stderr (no malloc, safer)
+	write(STDERR_FILENO, "\n=== CALL STACK ===\n", 19);
+	backtrace_symbols_fd(callstack, frames, STDERR_FILENO);
+	write(STDERR_FILENO, "==================\n\n", 20);
+#else
+	WLog_INFO(TAG, "Backtrace not available on this platform");
+#endif
+
+	WLog_INFO(TAG, "Setting abort event");
+	SetEvent(pdata->abort_event);
+}
 /* Proxy context initialization callback */
 static BOOL client_to_proxy_context_new(freerdp_peer* client, rdpContext* ctx)
 {
@@ -388,10 +413,30 @@ void proxy_data_free(proxyData* pdata)
 	free(pdata);
 }
 
-void proxy_data_abort_connect(proxyData* pdata)
-{
-	SetEvent(pdata->abort_event);
-}
+// Add this helper function at the top of the file
+ void print_call_stack(const char* context) {
+#ifdef HAVE_EXECINFO_H
+ 	void* callstack[128];
+ 	int frames = backtrace(callstack, 128);
+ 	char** strs = backtrace_symbols(callstack, frames);
+
+ 	WLog_INFO("======== CALL STACK: %s ========", context);
+ 	WLog_INFO("Total frames: %d", frames);
+
+ 	for (int i = 0; i < frames; i++) {
+ 		WLog_INFO("  #%d: %s", i, strs[i]);
+ 	}
+
+ 	// Also write to stderr for immediate visibility
+ 	fprintf(stderr, "\n======== CALL STACK: %s ========\n", context);
+ 	backtrace_symbols_fd(callstack, frames, STDERR_FILENO);
+ 	fprintf(stderr, "=======================================\n\n");
+
+ 	free(strs);
+#else
+ 	WLog_INFO("Call stack for '%s': Not available (no backtrace support)", context);
+#endif
+ }
 
 BOOL proxy_data_shall_disconnect(proxyData* pdata)
 {

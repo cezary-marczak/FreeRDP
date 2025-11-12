@@ -115,6 +115,7 @@ typedef struct proxy_server
 	char* auth_filename;
 
 	int (*start_recording)(const struct proxy_server* proxy_srv, const char* principal);
+	int (*read_guac_init)(void* client, const char* auth_filename, void* proxy_srv);
 	HANDLE start_recording_event;
 	const char* conn_name;
 	wArrayList* allowed_principals;

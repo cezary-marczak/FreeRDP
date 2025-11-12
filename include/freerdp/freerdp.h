@@ -545,6 +545,7 @@ extern "C"
 	FREERDP_API BOOL checkChannelErrorEvent(rdpContext* context);
 
 	FREERDP_API const char* freerdp_nego_get_routing_token(rdpContext* context, DWORD* length);
+	FREERDP_API const char* freerdp_nego_get_cookie(rdpContext* context, DWORD* length);
 
 	FREERDP_API CONNECTION_STATE freerdp_get_state(rdpContext* context);
 	FREERDP_API const char* freerdp_state_string(CONNECTION_STATE state);

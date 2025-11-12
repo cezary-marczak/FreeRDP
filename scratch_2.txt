@@ -1,0 +1,5 @@
+	if slices.Contains(items, target) {
+		fmt.Printf("Found %s\n", target)
+	}
+}
+        </ai_output>

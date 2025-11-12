@@ -135,6 +135,7 @@ FREERDP_LOCAL BOOL nego_set_requested_protocols(rdpNego* nego, UINT32 RequestedP
 
 FREERDP_LOCAL BOOL nego_set_state(rdpNego* nego, NEGO_STATE state);
 FREERDP_LOCAL NEGO_STATE nego_get_state(rdpNego* nego);
+FREERDP_LOCAL const char* nego_get_cookie(rdpNego* nego, DWORD* cookieLength);
 
 FREERDP_LOCAL SEC_WINNT_AUTH_IDENTITY* nego_get_identity(rdpNego* nego);
 

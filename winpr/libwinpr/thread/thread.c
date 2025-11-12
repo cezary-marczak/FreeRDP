@@ -550,6 +550,7 @@ exit:
 
 static BOOL winpr_StartThread(WINPR_THREAD* thread)
 {
+	WLog_INFO(TAG, "Starting thread %p", thread);
 	BOOL rc = FALSE;
 	BOOL locked = FALSE;
 	pthread_attr_t attr = { 0 };
@@ -564,6 +565,7 @@ static BOOL winpr_StartThread(WINPR_THREAD* thread)
 	if (thread->dwStackSize > 0)
 		pthread_attr_setstacksize(&attr, (size_t)thread->dwStackSize);
 
+	WLog_INFO(TAG, "Thread stack size: %" PRIu32, thread->dwStackSize);
 	thread->started = TRUE;
 	reset_event(thread);
 
@@ -704,6 +706,7 @@ void cleanup_handle(void* obj)
 
 BOOL ThreadCloseHandle(HANDLE handle)
 {
+	WLog_INFO(TAG, "ThreadCloseHandle: %p", handle);
 	WINPR_THREAD* thread = (WINPR_THREAD*)handle;
 
 #if defined(WITH_THREAD_LIST)

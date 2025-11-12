@@ -1377,6 +1377,7 @@ BOOL nego_set_cookie(rdpNego* nego, char* cookie)
 	if (!nego->cookie)
 		return FALSE;
 
+	WLog_INFO(TAG, "CZARAS Cookie: %s", nego->cookie);
 	return TRUE;
 }
 
@@ -1499,4 +1500,13 @@ const BYTE* nego_get_routing_token(rdpNego* nego, DWORD* RoutingTokenLength)
 	if (RoutingTokenLength)
 		*RoutingTokenLength = nego->RoutingTokenLength;
 	return nego->RoutingToken;
+}
+
+const char* nego_get_cookie(rdpNego* nego, DWORD* cookieLength)
+{
+	if (!nego)
+		return NULL;
+	if (cookieLength && nego->cookie)
+		*cookieLength = strlen(nego->cookie);
+	return nego->cookie;
 }

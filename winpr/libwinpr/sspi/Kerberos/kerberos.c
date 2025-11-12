@@ -232,7 +232,7 @@ static int kerberos_SetContextServicePrincipalNameA(KRB_CONTEXT* context,
 
 #ifdef WITH_GSSAPI
 
-static krb5_error_code ctx_init(krb5_context ctx, krb5_principal client, krb5_ccache *out_ccache)
+krb5_error_code ctx_init(krb5_context ctx, krb5_principal client, krb5_ccache *out_ccache)
 {
 	krb5_ccache ccache;
 	krb5_error_code ret;

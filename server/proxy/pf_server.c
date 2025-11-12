@@ -43,6 +43,7 @@
 #include "pf_rail.h"
 #include "pf_channels.h"
 #include "pf_modules.h"
+#include "../../libfreerdp/core/rdp.h"
 
 #define TAG PROXY_TAG("server")
 
@@ -59,17 +60,23 @@ static BOOL pf_server_parse_target_from_routing_token(rdpContext* context, char*
 {
 #define TARGET_MAX (100)
 #define ROUTING_TOKEN_PREFIX "Cookie: msts="
+#define COOKIE_ROUTING_TOKEN_PREFIX "Cookie: mstshash="
 	char* colon;
 	size_t len;
 	DWORD routing_token_length;
-	const size_t prefix_len = strnlen(ROUTING_TOKEN_PREFIX, sizeof(ROUTING_TOKEN_PREFIX));
-	const char* routing_token = freerdp_nego_get_routing_token(context, &routing_token_length);
+	size_t prefix_len = strnlen(ROUTING_TOKEN_PREFIX, sizeof(ROUTING_TOKEN_PREFIX));
+	const char* std_routing_token = freerdp_nego_get_routing_token(context, &routing_token_length);
 	pServerContext* ps = (pServerContext*)context;
-
-	if (routing_token == NULL)
+	const char* routing_token = std_routing_token;
+	if (std_routing_token == NULL)
 	{
-		/* no routing token */
-		return FALSE;
+		prefix_len = strnlen(COOKIE_ROUTING_TOKEN_PREFIX, sizeof(COOKIE_ROUTING_TOKEN_PREFIX));
+		const char* cookie_routing_token = freerdp_nego_get_cookie(context, &routing_token_length);
+		if (cookie_routing_token == NULL) {
+			/* no routing token */
+			return FALSE;
+		}
+		routing_token = cookie_routing_token;
 	}
 
 	if ((routing_token_length <= prefix_len) || (routing_token_length >= TARGET_MAX))
@@ -145,6 +152,8 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 	proxyData* pdata;
 	ps = (pServerContext*)peer->context;
 	pdata = ps->pdata;
+	// peer.rdp
+
 
 	if (pdata->config->SessionCapture && !peer->settings->SupportGraphicsPipeline)
 	{
@@ -165,6 +174,12 @@ static BOOL pf_server_post_connect(freerdp_peer* peer)
 	{
 		LOG_ERR(TAG, ps, "Principal %s is not allowed to connect", peer->settings->Username);
 		return FALSE;
+	}
+
+	if (server->read_guac_init != NULL) {
+		DWORD cookie_len;
+		const char* cookie = freerdp_nego_get_cookie(peer->context, &cookie_len);
+		server->read_guac_init(server->guacamole_client, cookie + strlen(COOKIE_ROUTING_TOKEN_PREFIX), server);
 	}
 
 	if (server->start_recording != NULL) {
@@ -359,13 +374,15 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 	freerdp_peer* client = (freerdp_peer*)arg;
 	proxyServer* server = (proxyServer*)client->ContextExtra;
 
+	WLog_INFO(TAG, "CZARAS new peer connection from %s", client->hostname);
+
 	if (!pf_context_init_server_context(client)) {
-		WLog_ERR(TAG, "failed to initialize server context");
+		WLog_ERR(TAG, "CZARAS failed to initialize server context");
 		goto out_free_peer;
 	}
 
 	if (!pf_server_initialize_peer_connection(client)) {
-		WLog_ERR(TAG, "failed to initialize peer conn");
+		WLog_ERR(TAG, "CZARAS failed to initialize peer conn");
 		goto out_free_peer;
 	}
 
@@ -385,27 +402,27 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 
 			if (tmp == 0)
 			{
-				WLog_ERR(TAG, "Failed to get FreeRDP transport event handles");
+				WLog_ERR(TAG, "CZARAS Failed to get FreeRDP transport event handles");
 				break;
 			}
 
 			eventCount += tmp;
 		}
-		WLog_VRB(TAG, "%d EVENT HANDLER: ChannelEvent", eventCount);
+		WLog_VRB(TAG, "CZARAS %d EVENT HANDLER: ChannelEvent", eventCount);
 		eventHandles[eventCount++] = ChannelEvent;
-		WLog_VRB(TAG, "%d EVENT HANDLER: abortEvent", eventCount);
+		WLog_VRB(TAG, "CZARAS %d EVENT HANDLER: abortEvent", eventCount);
 		eventHandles[eventCount++] = pdata->abort_event;
-		WLog_VRB(TAG, "%d EVENT HANDLER: WTSVirtualChannelManagerGetEventHandle", eventCount);
+		WLog_VRB(TAG, "CZARAS %d EVENT HANDLER: WTSVirtualChannelManagerGetEventHandle", eventCount);
 		eventHandles[eventCount++] = WTSVirtualChannelManagerGetEventHandle(ps->vcm);
 		status = WaitForMultipleObjects(eventCount, eventHandles, FALSE, INFINITE);
 
 		if (status == WAIT_FAILED)
 		{
-			WLog_ERR(TAG, "WaitForMultipleObjects failed (status: %d)", status);
+			WLog_ERR(TAG, "CZARAS WaitForMultipleObjects failed (status: %d)", status);
 			break;
 		}
 
-//		WLog_VRB(TAG, "WaitForMultipleObjects status: %d", status - WAIT_OBJECT_0);
+//		WLog_VRB(TAG, "CZARAS WaitForMultipleObjects status: %d", status - WAIT_OBJECT_0);
 
 		if (client->CheckFileDescriptor(client) != TRUE)
 			break;
@@ -414,7 +431,7 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 		{
 			if (!WTSVirtualChannelManagerCheckFileDescriptor(ps->vcm))
 			{
-				WLog_ERR(TAG, "WTSVirtualChannelManagerCheckFileDescriptor failure");
+				WLog_ERR(TAG, "CZARAS WTSVirtualChannelManagerCheckFileDescriptor failure");
 				goto fail;
 			}
 		}
@@ -422,7 +439,7 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 		/* only disconnect after checking client's and vcm's file descriptors  */
 		if (proxy_data_shall_disconnect(pdata))
 		{
-			WLog_INFO(TAG, "abort event is set, closing connection with peer %s", client->hostname);
+			WLog_INFO(TAG, "CZARAS abort event is set, closing connection with peer %s", client->hostname);
 			break;
 		}
 
@@ -434,7 +451,7 @@ static DWORD WINAPI pf_server_handle_peer(LPVOID arg)
 				/* Initialize drdynvc channel */
 				if (!WTSVirtualChannelManagerCheckFileDescriptor(ps->vcm))
 				{
-					WLog_ERR(TAG, "Failed to initialize drdynvc channel");
+					WLog_ERR(TAG, "CZARAS Failed to initialize drdynvc channel");
 					goto fail;
 				}
 
@@ -515,7 +532,7 @@ static DWORD WINAPI pf_server_mainloop(LPVOID arg)
 
 		if (0 == eventCount)
 		{
-			WLog_ERR(TAG, "Failed to get FreeRDP event handles");
+			WLog_ERR(TAG, "CZARAS Failed to get FreeRDP event handles");
 			break;
 		}
 
@@ -527,7 +544,7 @@ static DWORD WINAPI pf_server_mainloop(LPVOID arg)
 
 		if (WAIT_FAILED == status)
 		{
-			WLog_ERR(TAG, "select failed");
+			WLog_ERR(TAG, "CZARAS select failed");
 			break;
 		}
 
@@ -538,6 +555,7 @@ static DWORD WINAPI pf_server_mainloop(LPVOID arg)
 		}
 	}
 
+	WLog_INFO(TAG, "CZARAS listener stopped");
 	listener->Close(listener);
 	ExitThread(0);
 	return 0;
